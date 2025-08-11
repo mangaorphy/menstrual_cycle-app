@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "720482382655",
+    "project_id": "menstrual-cycle-app-bebd6",
+    "storage_bucket": "menstrual-cycle-app-bebd6.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:720482382655:android:f9b8db0e9dacddc3d0598a",
+        "android_client_info": {
+          "package_name": "com.example.menstrual_tracker"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDSOcLTC0QUqKdpp_DVeI8Z7GD3ki-C_UI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,392 +1,533 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-import 'package:menstrual_tracker/providers/cycle_provider.dart';
-import 'package:menstrual_tracker/models/cycle_data.dart';
 import 'package:provider/provider.dart';
-import 'package:table_calendar/table_calendar.dart';
-import 'package:menstrual_tracker/screens/stats_screen.dart';
+import '../providers/cycle_provider.dart';
+import 'settings_screen.dart';
+import 'stats_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  _HomeScreenState createState() => _HomeScreenState();
+  State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  CalendarFormat _calendarFormat = CalendarFormat.month;
-  DateTime _focusedDay = DateTime.now();
+  int _currentIndex = 0;
+
+  void _onTabTapped(int index) {
+    setState(() {
+      _currentIndex = index;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final cycleProvider = Provider.of<CycleProvider>(context);
-
-    // Sample data - replace with your actual data
-    final DateTime nextPeriodStart = DateTime.now().add(const Duration(days: 5));
-    final DateTime fertileStart = DateTime.now().add(const Duration(days: -5));
-    final DateTime ovulationDate = DateTime.now().add(const Duration(days: -2));
-    final bool isPeriodDay = true;
-    final int cycleDay = 1;
+    final currentCycle = cycleProvider.currentCycle;
+    final theme = Theme.of(context);
 
     return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: Text('Cycle Tracker', style: TextStyle(color: Colors.white)),
-        centerTitle: true,
-        backgroundColor: Theme.of(context).primaryColor,
-        actions: [
-          IconButton(
-            icon: Icon(Icons.show_chart),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: Container(
+          margin: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: theme.cardColor,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: theme.shadowColor.withValues(alpha: 0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: IconButton(
+            icon: const Icon(
+              Icons.settings,
+              color: Colors.pinkAccent,
+              size: 22,
+            ),
             onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => StatsScreen()),
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const SettingsScreen(),
+                ),
               );
             },
           ),
-          IconButton(
-            icon: Icon(Icons.add),
-            onPressed: () => _showAddPeriodDialog(context),
+        ),
+        actions: [
+          Container(
+            margin: const EdgeInsets.only(right: 16, top: 8, bottom: 8),
+            decoration: BoxDecoration(
+              color: theme.cardColor,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: theme.shadowColor.withValues(alpha: 0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: IconButton(
+              icon: const Icon(
+                Icons.calendar_today,
+                color: Colors.pinkAccent,
+                size: 22,
+              ),
+              onPressed: () {
+                // TODO: Handle calendar tap
+              },
+            ),
           ),
         ],
       ),
       body: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(20),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Period Summary Section
-              _buildPeriodSummary(context, nextPeriodStart),
-              const SizedBox(height: 24),
-              
-              // Cycle Phase Section
-              _buildCyclePhaseSection(fertileStart, ovulationDate),
-              const SizedBox(height: 24),
-              
-              // Today's Status
-              _buildTodayStatus(isPeriodDay, cycleDay),
-              const SizedBox(height: 24),
-              
-              // Calendar
-              TableCalendar(
-                firstDay: DateTime.utc(2020, 1, 1),
-                lastDay: DateTime.utc(2030, 12, 31),
-                focusedDay: _focusedDay,
-                calendarFormat: _calendarFormat,
-                onFormatChanged: (format) {
-                  setState(() {
-                    _calendarFormat = format;
-                  });
-                },
-                onDaySelected: (selectedDay, focusedDay) {
-                  setState(() {
-                    _focusedDay = focusedDay;
-                  });
-                  cycleProvider.setSelectedDate(selectedDay);
-                },
-                calendarBuilders: CalendarBuilders(
-                  markerBuilder: (context, date, events) {
-                    final cycle = cycleProvider.getCycleForDate(date);
-                    if (cycle != null) {
-                      return Positioned(
-                        right: 1,
-                        bottom: 1,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.red,
-                            shape: BoxShape.circle,
+              // Greeting Section
+              Text(
+                'Hello, beautiful! 💕',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onSurface,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'How are you feeling today?',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                ),
+              ),
+              const SizedBox(height: 30),
+
+              // Current Cycle Card
+              Container(
+                width: double.infinity,
+                height: 200,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFF48FB1), Color(0xFFCE93D8)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.pink.withValues(alpha: 0.2),
+                      blurRadius: 15,
+                      offset: const Offset(0, 5),
+                    ),
+                  ],
+                ),
+                child: Stack(
+                  children: [
+                    // Background pattern
+                    Positioned(
+                      right: -20,
+                      top: -20,
+                      child: Icon(
+                        Icons.favorite,
+                        size: 100,
+                        color: theme.colorScheme.onPrimary.withValues(alpha: 0.1),
+                      ),
+                    ),
+                    Positioned(
+                      left: -10,
+                      bottom: -10,
+                      child: Icon(
+                        Icons.spa,
+                        size: 80,
+                        color: theme.colorScheme.onPrimary.withValues(alpha: 0.1),
+                      ),
+                    ),
+                    // Content
+                    Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            currentCycle != null
+                                ? 'Current Cycle Day'
+                                : 'Track Your Cycle',
+                            style: TextStyle(
+                              color: theme.colorScheme.onPrimary,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
-                          width: 8,
-                          height: 8,
-                        ),
-                      );
-                    }
-                    return SizedBox();
-                  },
+                          const SizedBox(height: 8),
+                          Text(
+                            currentCycle != null ? '12' : 'Start Today',
+                            style: TextStyle(
+                              color: theme.colorScheme.onPrimary,
+                              fontSize: 48,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const Spacer(),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.onPrimary.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: theme.colorScheme.onPrimary.withValues(alpha: 0.3),
+                                width: 1,
+                              ),
+                            ),
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.transparent,
+                                shadowColor: Colors.transparent,
+                                padding: EdgeInsets.zero,
+                                minimumSize: const Size(0, 0),
+                              ),
+                              onPressed: () {
+                                // TODO: Handle log period
+                              },
+                              child: Text(
+                                'Log Period',
+                                style: TextStyle(
+                                  color: theme.colorScheme.onPrimary,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 30),
+
+              // Quick Actions
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildQuickAction(
+                    icon: Icons.water_drop,
+                    label: 'Log Flow',
+                    color: theme.colorScheme.primaryContainer,
+                    iconColor: theme.colorScheme.primary,
+                    onTap: () {},
+                  ),
+                  _buildQuickAction(
+                    icon: Icons.mood,
+                    label: 'Log Mood',
+                    color: theme.colorScheme.secondaryContainer,
+                    iconColor: theme.colorScheme.secondary,
+                    onTap: () {},
+                  ),
+                  _buildQuickAction(
+                    icon: Icons.favorite,
+                    label: 'Symptoms',
+                    color: theme.colorScheme.tertiaryContainer,
+                    iconColor: theme.colorScheme.tertiary,
+                    onTap: () {},
+                  ),
+                ],
+              ),
+              const SizedBox(height: 30),
+
+              // Stats Section
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: theme.cardColor,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: theme.shadowColor.withValues(alpha: 0.06),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'This Month',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        _buildStatItem('Cycle Length', '28 days', Icons.loop),
+                        _buildStatItem('Period Length', '5 days', Icons.calendar_today),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        _buildStatItem('Next Period', '12 days', Icons.schedule),
+                        _buildStatItem('Fertile Window', '6 days', Icons.eco),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 30),
+
+              // Recent Cycles
+              Text(
+                'Recent Cycles',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onSurface,
                 ),
               ),
               const SizedBox(height: 16),
-              
-              // Cycle Details
-              _buildCycleDetails(cycleProvider),
+              ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: cycleProvider.cycles.take(3).length,
+                itemBuilder: (context, index) {
+                  final cycle = cycleProvider.cycles[index];
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: theme.cardColor,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: theme.shadowColor.withValues(alpha: 0.04),
+                          blurRadius: 8,
+                          offset: const Offset(0, 1),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 12,
+                          height: 12,
+                          decoration: const BoxDecoration(
+                            color: Colors.pinkAccent,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '${cycle.periodStartDate.day}/${cycle.periodStartDate.month}/${cycle.periodStartDate.year}',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: theme.colorScheme.onSurface,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '${cycle.cycleLength} day cycle',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Icon(
+                          Icons.arrow_forward_ios,
+                          size: 16,
+                          color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+              if (cycleProvider.cycles.isEmpty)
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: theme.cardColor,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: theme.colorScheme.outline.withValues(alpha: 0.2),
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.calendar_today_outlined,
+                        size: 48,
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'No cycles tracked yet',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Start tracking your cycle to see insights',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
             ],
           ),
         ),
       ),
-      bottomNavigationBar: _buildNavigationButtons(),
-    );
-  }
-
-  Widget _buildPeriodSummary(BuildContext context, DateTime nextPeriodStart) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Period',
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-            color: Colors.purple[800],
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            Text(
-              '1st Day',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey[600],
-              ),
-            ),
-            const Spacer(),
-            Text(
-              '${DateFormat('MMM d').format(nextPeriodStart)} - Next Period',
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
+      bottomNavigationBar: Container(
+        height: 80,
+        decoration: BoxDecoration(
+          color: theme.cardColor,
+          boxShadow: [
+            BoxShadow(
+              color: theme.shadowColor.withValues(alpha: 0.08),
+              blurRadius: 20,
+              offset: const Offset(0, -5),
             ),
           ],
         ),
-        const SizedBox(height: 8),
-        const Divider(thickness: 1),
-        const SizedBox(height: 8),
-        Text(
-          'Period Ends',
-          style: TextStyle(
-            fontSize: 16,
-            color: Colors.grey[600],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCyclePhaseSection(DateTime fertileStart, DateTime ovulationDate) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Cycle phase',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.purple[800],
-          ),
-        ),
-        const SizedBox(height: 12),
-        Table(
-          columnWidths: const {
-            0: FlexColumnWidth(1),
-            1: FlexColumnWidth(1),
-          },
-          children: [
-            TableRow(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 8.0),
-                  child: Text(
-                    '${DateFormat('MMM d').format(fertileStart)}',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 8.0),
-                  child: Text(
-                    '${DateFormat('MMM d').format(ovulationDate)}',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ],
+        child: BottomNavigationBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          type: BottomNavigationBarType.fixed,
+          currentIndex: _currentIndex,
+          onTap: _onTabTapped,
+          selectedItemColor: theme.colorScheme.primary,
+          unselectedItemColor: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+          items: const [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.home),
+              label: 'Home',
             ),
-            TableRow(
-              children: [
-                Text('Next Fertile', style: TextStyle(color: Colors.grey[600])),
-                Text('Ovulation', style: TextStyle(color: Colors.grey[600])),
-              ],
+            BottomNavigationBarItem(
+              icon: Icon(Icons.calendar_today),
+              label: 'Calendar',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.insights),
+              label: 'Insights',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.person),
+              label: 'Profile',
             ),
           ],
         ),
-      ],
-    );
-  }
-
-  Widget _buildTodayStatus(bool isPeriodDay, int cycleDay) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Text(
-              'Today',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.purple[800],
-              ),
-            ),
-            const SizedBox(width: 16),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: isPeriodDay ? Colors.red[100] : Colors.blue[100],
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                'Day $cycleDay',
-                style: TextStyle(
-                  color: isPeriodDay ? Colors.red[800] : Colors.blue[800],
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildNavigationButtons() {
-    return BottomNavigationBar(
-      items: const [
-        BottomNavigationBarItem(
-          icon: Icon(Icons.today),
-          label: 'Today',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.calendar_today),
-          label: 'Calendar',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.self_improvement),
-          label: 'Self Care',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.analytics),
-          label: 'Analysis',
-        ),
-      ],
-      currentIndex: 0,
-      selectedItemColor: Colors.purple[800],
-      unselectedItemColor: Colors.grey[600],
-      showUnselectedLabels: true,
-      type: BottomNavigationBarType.fixed,
-    );
-  }
-
-  Widget _buildCycleDetails(CycleProvider cycleProvider) {
-    if (cycleProvider.selectedDate == null) {
-      return const SizedBox(); // Return empty if no date selected
-    }
-
-    final cycle = cycleProvider.getCycleForDate(cycleProvider.selectedDate!);
-    
-    if (cycle == null) {
-      return const SizedBox(); // Return empty if no cycle for selected date
-    }
-
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Period Details', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 10),
-          Text('Start Date: ${cycle.periodStartDate.toLocal().toString().split(' ')[0]}'),
-          Text('End Date: ${cycle.periodEndDate.toLocal().toString().split(' ')[0]}'),
-          Text('Cycle Length: ${cycle.cycleLength} days'),
-          const SizedBox(height: 10),
-          Text('Symptoms: ${cycle.symptoms.join(', ')}'),
-          Text('Mood: ${cycle.mood}'),
-          Text('Flow: ${cycle.flowIntensity}'),
-        ],
       ),
     );
   }
 
-  void _showAddPeriodDialog(BuildContext context) {
-    final cycleProvider = Provider.of<CycleProvider>(context, listen: false);
-    DateTime startDate = DateTime.now();
-    DateTime endDate = DateTime.now().add(Duration(days: 5));
-    int cycleLength = 28;
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text('Add New Period'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text('Start Date'),
-                ElevatedButton(
-                  child: Text('${startDate.toLocal().toString().split(' ')[0]}'),
-                  onPressed: () async {
-                    final pickedDate = await showDatePicker(
-                      context: context,
-                      initialDate: startDate,
-                      firstDate: DateTime(2000),
-                      lastDate: DateTime(2100),
-                    );
-                    if (pickedDate != null) {
-                      setState(() {
-                        startDate = pickedDate;
-                      });
-                    }
-                  },
-                ),
-                SizedBox(height: 10),
-                Text('End Date'),
-                ElevatedButton(
-                  child: Text('${endDate.toLocal().toString().split(' ')[0]}'),
-                  onPressed: () async {
-                    final pickedDate = await showDatePicker(
-                      context: context,
-                      initialDate: endDate,
-                      firstDate: DateTime(2000),
-                      lastDate: DateTime(2100),
-                    );
-                    if (pickedDate != null) {
-                      setState(() {
-                        endDate = pickedDate;
-                      });
-                    }
-                  },
-                ),
-                SizedBox(height: 10),
-                Text('Cycle Length (days)'),
-                TextField(
-                  keyboardType: TextInputType.number,
-                  onChanged: (value) {
-                    cycleLength = int.tryParse(value) ?? 28;
-                  },
-                  decoration: InputDecoration(
-                    hintText: '28',
-                  ),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              child: Text('Cancel'),
-              onPressed: () => Navigator.pop(context),
-            ),
-            TextButton(
-              child: Text('Save'),
-              onPressed: () {
-                final newCycle = CycleData(
-                  periodStartDate: startDate,
-                  periodEndDate: endDate,
-                  cycleLength: cycleLength,
-                );
-                cycleProvider.addCycle(newCycle);
-                Navigator.pop(context);
-              },
+  Widget _buildQuickAction({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required Color iconColor,
+    required VoidCallback onTap,
+  }) {
+    final theme = Theme.of(context);
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 100,
+        height: 100,
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: iconColor.withValues(alpha: 0.2),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
             ),
           ],
-        );
-      },
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              color: iconColor,
+              size: 32,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: theme.colorScheme.onSurface,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatItem(String title, String value, IconData icon) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(
+              icon,
+              size: 16,
+              color: theme.colorScheme.primary,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 12,
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: theme.colorScheme.onSurface,
+          ),
+        ),
+      ],
     );
   }
 }

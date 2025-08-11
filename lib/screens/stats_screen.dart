@@ -5,6 +5,8 @@ import 'package:syncfusion_flutter_charts/charts.dart';
 import 'package:menstrual_tracker/models/cycle_data.dart'; // Add this import if CycleData is defined here
 
 class StatsScreen extends StatelessWidget {
+  const StatsScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     final cycleProvider = Provider.of<CycleProvider>(context);
@@ -17,7 +19,7 @@ class StatsScreen extends StatelessWidget {
           children: [
             Text('Cycle Length Over Time', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             SizedBox(height: 10),
-            Container(
+            SizedBox(
               height: 300,
               child: SfCartesianChart(
                 primaryXAxis: CategoryAxis(),
