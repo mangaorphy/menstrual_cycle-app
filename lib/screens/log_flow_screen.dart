@@ -165,7 +165,7 @@ class _LogFlowScreenState extends State<LogFlowScreen> {
             ),
             const SizedBox(height: 16),
 
-            ..._flowOptions.map((option) => _buildFlowOption(option)).toList(),
+            ..._flowOptions.map((option) => _buildFlowOption(option)),
 
             const SizedBox(height: 24),
 

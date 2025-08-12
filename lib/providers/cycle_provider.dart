@@ -4,6 +4,7 @@ import 'package:menstrual_tracker/models/daily_log.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:menstrual_tracker/services/notification_service.dart';
 import 'dart:math';
 
 class CycleProvider with ChangeNotifier {
@@ -234,11 +235,19 @@ class CycleProvider with ChangeNotifier {
 
       // Add to local list at the beginning (most recent first)
       _cycles.insert(0, newCycle);
+
+      // Schedule notifications for the new cycle
+      await _scheduleNotificationsForCycle(newCycle);
+
       notifyListeners();
     } catch (e) {
       print('❌ Error adding cycle to Firestore: $e');
       // Still add locally if Firestore fails (at beginning)
       _cycles.insert(0, newCycle);
+
+      // Schedule notifications even if Firestore fails
+      await _scheduleNotificationsForCycle(newCycle);
+
       notifyListeners();
     }
   }
@@ -684,5 +693,82 @@ class CycleProvider with ChangeNotifier {
     }
 
     return patterns;
+  }
+
+  // Notification scheduling methods
+  Future<void> _scheduleNotificationsForCycle(CycleData cycle) async {
+    try {
+      await NotificationService().initialize();
+
+      // Use average cycle length if we have data, else 28
+      final estCycleLength = averageCycleLength; // already has default fallback
+      final nextPeriodDate = cycle.periodStartDate.add(
+        Duration(days: estCycleLength),
+      );
+
+      // Schedule a reminder 3 days before
+      if (nextPeriodDate.isAfter(DateTime.now())) {
+        await NotificationService().schedulePeriodReminder(
+          scheduledDate: nextPeriodDate,
+          daysUntilPeriod: 3,
+          notificationId: 1000,
+        );
+        // Day-of notification
+        await NotificationService().scheduleNextPeriodNotification(
+          nextPeriodDate: nextPeriodDate,
+          notificationId: 1001,
+        );
+      }
+
+      // Fertile window (ovulation ~14 days before next period; fertile start 5 days before ovulation)
+      final ovulationDate = nextPeriodDate.subtract(const Duration(days: 14));
+      final fertileStart = ovulationDate.subtract(const Duration(days: 5));
+      if (fertileStart.isAfter(DateTime.now())) {
+        await NotificationService().scheduleFertileWindowNotification(
+          fertileStartDate: fertileStart,
+          notificationId: 3000,
+        );
+      }
+
+      // Schedule daily log reminders (next 7 days)
+      await _scheduleDailyLogReminders(days: 7);
+    } catch (e) {
+      print('❌ Error scheduling notifications: $e');
+    }
+  }
+
+  Future<void> _scheduleDailyLogReminders({int days = 7}) async {
+    try {
+      final now = DateTime.now();
+      for (int i = 0; i < days; i++) {
+        final date = DateTime(
+          now.year,
+          now.month,
+          now.day,
+        ).add(Duration(days: i));
+        await NotificationService().scheduleDailyLogReminder(
+          scheduledDate: date,
+          notificationId: 2000 + i,
+        );
+      }
+      print('📅 Scheduled daily log reminders for next $days days');
+    } catch (e) {
+      print('❌ Error scheduling daily log reminders: $e');
+    }
+  }
+
+  // Method to initialize and schedule all notifications
+  Future<void> initializeNotifications() async {
+    try {
+      await NotificationService().initialize();
+      if (_cycles.isNotEmpty) {
+        final latestCycle = _cycles.first; // most recent at index 0
+        await _scheduleNotificationsForCycle(latestCycle);
+      } else {
+        await _scheduleDailyLogReminders(days: 7);
+      }
+    } catch (e) {
+      print('❌ Error initializing notifications: $e');
+    }
   }
 }

@@ -316,7 +316,7 @@ class _LogSymptomsScreenState extends State<LogSymptomsScreen> {
 
             ..._groupedSymptoms.entries.map((entry) {
               return _buildSymptomCategory(entry.key, entry.value, theme);
-            }).toList(),
+            }),
 
             const SizedBox(height: 24),
 

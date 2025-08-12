@@ -43,3 +43,175 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Firebase sensitive files
+/android/app/google-services.json
+/ios/Runner/GoogleService-Info.plist
+/lib/firebase_options.dart
+firebase_app_id_file.json
+
+# Environment variables and sensitive keys
+.env
+.env.local
+.env.development
+.env.production
+*.key
+*.p12
+*.jks
+*.keystore
+key.properties
+
+# APK files (optional - uncomment if you don't want to track APKs)
+# *.apk
+# *.aab
+
+# iOS specific
+**/ios/Runner/Info-Debug.plist
+**/ios/Runner/Info-Release.plist
+**/ios/Flutter/flutter_export_environment.sh
+**/ios/ServiceDefinitions.json
+**/ios/Runner/GeneratedPluginRegistrant.*
+
+# macOS specific
+**/macos/Flutter/ephemeral/
+**/macos/Flutter/GeneratedPluginRegistrant.swift
+
+# Windows specific
+**/windows/flutter/ephemeral/
+
+# Linux specific
+**/linux/flutter/ephemeral/
+
+# Coverage
+coverage/
+lcov.info
+
+# Temporary files
+*.tmp
+*.temp
+
+# Local database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+logs/
+*.log
+
+# Node modules (if using any Node.js tools)
+node_modules/
+
+# Package files
+*.tgz
+*.tar.gz
+
+# VS Code specific (if you want to exclude)
+.vscode/settings.json
+.vscode/launch.json
+.vscode/extensions.json
+
+# Android signing
+/android/key.properties
+/android/app/release/
+upload-keystore.jks
+
+# iOS signing
+ios/Runner/Assets.xcassets/AppIcon.appiconset/
+ios/fastlane/
+ios/Pods/
+
+# Generated files
+**/*.g.dart
+**/*.freezed.dart
+**/*.mocks.dart
+
+# Test coverage
+coverage/
+test/.test_coverage.dart
+
+# Firebase sensitive files (IMPORTANT: These contain API keys)
+# Keep these files private and never commit them to version control
+# firebase_options.dart
+# android/app/google-services.json
+# ios/Runner/GoogleService-Info.plist
+
+# Environment files
+.env
+.env.local
+.env.production
+.env.staging
+
+# API Keys and secrets (if stored in separate files)
+secrets.json
+keys.json
+config.json
+
+# Keystore files (Android signing)
+*.keystore
+*.jks
+key.properties
+
+# iOS signing files
+ios/Runner/GoogleService-Info.plist
+*.mobileprovision
+*.p8
+*.p12
+
+# APK and AAB files (build artifacts)
+*.apk
+*.aab
+*.ipa
+
+# Web build files
+/web/build/
+
+# Temporary files
+*.tmp
+*.temp
+*.lock
+
+# Coverage files
+coverage/
+lcov.info
+
+# Firebase cache
+.firebase/
+.firebaserc
+firebase-debug.log
+firebase-debug.*.log
+
+# Local database files
+*.sqlite
+*.sqlite3
+*.db
+
+# IDE specific files
+.vscode/settings.json
+.vscode/launch.json
+*.code-workspace
+
+# macOS specific
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+
+# Thumbnails
+._*
+
+# Files that might appear in the root of a volume
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Directories potentially created on remote AFP share
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk

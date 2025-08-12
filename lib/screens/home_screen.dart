@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/cycle_provider.dart';
 import 'settings_screen.dart';
-import 'stats_screen.dart';
 import 'log_period_screen.dart';
 import 'calendar_screen.dart';
 import 'insights_screen.dart';
 import 'log_flow_screen.dart';
 import 'log_mood_screen.dart';
 import 'log_symptoms_screen.dart';
+import 'notification_settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -32,11 +32,13 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _refreshData() async {
     final cycleProvider = Provider.of<CycleProvider>(context, listen: false);
     await cycleProvider.refreshData();
+    await cycleProvider.initializeNotifications();
   }
 
   void _onTabTapped(int index) {
-    if (index == _currentIndex)
+    if (index == _currentIndex) {
       return; // Don't navigate if already on the same tab
+    }
 
     switch (index) {
       case 0:
@@ -124,7 +126,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 size: 22,
               ),
               onPressed: () {
-                // TODO: Handle notifications tap
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const NotificationSettingsScreen(),
+                  ),
+                );
               },
             ),
           ),
