@@ -3,34 +3,42 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class CycleData {
   String? id; // Firestore document ID
   DateTime periodStartDate;
-  DateTime periodEndDate;
+  DateTime? periodEndDate;
   int cycleLength;
+  int periodLength;
   List<String> symptoms;
   String mood;
   String flowIntensity;
   bool isFertile;
+  String? notes;
 
   CycleData({
     this.id,
     required this.periodStartDate,
-    required this.periodEndDate,
+    this.periodEndDate,
     required this.cycleLength,
+    this.periodLength = 5,
     this.symptoms = const [],
     this.mood = '',
-    this.flowIntensity = 'medium',
+    this.flowIntensity = 'Normal',
     this.isFertile = false,
+    this.notes,
   });
 
   // Convert CycleData to Map for Firestore
   Map<String, dynamic> toMap() {
     return {
       'periodStartDate': Timestamp.fromDate(periodStartDate),
-      'periodEndDate': Timestamp.fromDate(periodEndDate),
+      'periodEndDate': periodEndDate != null
+          ? Timestamp.fromDate(periodEndDate!)
+          : null,
       'cycleLength': cycleLength,
+      'periodLength': periodLength,
       'symptoms': symptoms,
       'mood': mood,
       'flowIntensity': flowIntensity,
       'isFertile': isFertile,
+      'notes': notes,
       'createdAt': Timestamp.now(),
     };
   }
@@ -40,12 +48,16 @@ class CycleData {
     return CycleData(
       id: documentId,
       periodStartDate: (map['periodStartDate'] as Timestamp).toDate(),
-      periodEndDate: (map['periodEndDate'] as Timestamp).toDate(),
+      periodEndDate: map['periodEndDate'] != null
+          ? (map['periodEndDate'] as Timestamp).toDate()
+          : null,
       cycleLength: map['cycleLength'] ?? 28,
+      periodLength: map['periodLength'] ?? 5,
       symptoms: List<String>.from(map['symptoms'] ?? []),
       mood: map['mood'] ?? '',
-      flowIntensity: map['flowIntensity'] ?? 'medium',
+      flowIntensity: map['flowIntensity'] ?? 'Normal',
       isFertile: map['isFertile'] ?? false,
+      notes: map['notes'],
     );
   }
 

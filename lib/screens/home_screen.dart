@@ -3,6 +3,12 @@ import 'package:provider/provider.dart';
 import '../providers/cycle_provider.dart';
 import 'settings_screen.dart';
 import 'stats_screen.dart';
+import 'log_period_screen.dart';
+import 'calendar_screen.dart';
+import 'insights_screen.dart';
+import 'log_flow_screen.dart';
+import 'log_mood_screen.dart';
+import 'log_symptoms_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -14,10 +20,50 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
 
-  void _onTabTapped(int index) {
-    setState(() {
-      _currentIndex = index;
+  @override
+  void initState() {
+    super.initState();
+    // Use addPostFrameCallback to avoid calling during build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _refreshData();
     });
+  }
+
+  Future<void> _refreshData() async {
+    final cycleProvider = Provider.of<CycleProvider>(context, listen: false);
+    await cycleProvider.refreshData();
+  }
+
+  void _onTabTapped(int index) {
+    if (index == _currentIndex)
+      return; // Don't navigate if already on the same tab
+
+    switch (index) {
+      case 0:
+        // Home - already here
+        setState(() {
+          _currentIndex = index;
+        });
+        break;
+      case 1:
+        // Calendar
+        Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (context) => const CalendarScreen()));
+        break;
+      case 2:
+        // Insights
+        Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (context) => const InsightsScreen()));
+        break;
+      case 3:
+        // Profile/Settings
+        Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (context) => const SettingsScreen()));
+        break;
+    }
   }
 
   @override
@@ -52,9 +98,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             onPressed: () {
               Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => const SettingsScreen(),
-                ),
+                MaterialPageRoute(builder: (context) => const SettingsScreen()),
               );
             },
           ),
@@ -75,12 +119,12 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             child: IconButton(
               icon: const Icon(
-                Icons.calendar_today,
+                Icons.notifications,
                 color: Colors.pinkAccent,
                 size: 22,
               ),
               onPressed: () {
-                // TODO: Handle calendar tap
+                // TODO: Handle notifications tap
               },
             ),
           ),
@@ -88,7 +132,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       body: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -139,7 +183,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: Icon(
                         Icons.favorite,
                         size: 100,
-                        color: theme.colorScheme.onPrimary.withValues(alpha: 0.1),
+                        color: theme.colorScheme.onPrimary.withValues(
+                          alpha: 0.1,
+                        ),
                       ),
                     ),
                     Positioned(
@@ -148,7 +194,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: Icon(
                         Icons.spa,
                         size: 80,
-                        color: theme.colorScheme.onPrimary.withValues(alpha: 0.1),
+                        color: theme.colorScheme.onPrimary.withValues(
+                          alpha: 0.1,
+                        ),
                       ),
                     ),
                     // Content
@@ -169,7 +217,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            currentCycle != null ? '12' : 'Start Today',
+                            currentCycle != null
+                                ? cycleProvider.currentCycleDay.toString()
+                                : 'Start Today',
                             style: TextStyle(
                               color: theme.colorScheme.onPrimary,
                               fontSize: 48,
@@ -177,27 +227,25 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           ),
                           const Spacer(),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 8),
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.onPrimary.withValues(alpha: 0.2),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                color: theme.colorScheme.onPrimary.withValues(alpha: 0.3),
-                                width: 1,
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) => const LogPeriodScreen(),
+                                ),
+                              );
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 12,
                               ),
-                            ),
-                            child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.transparent,
-                                shadowColor: Colors.transparent,
-                                padding: EdgeInsets.zero,
-                                minimumSize: const Size(0, 0),
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.onPrimary.withValues(
+                                  alpha: 0.2,
+                                ),
+                                borderRadius: BorderRadius.circular(20),
                               ),
-                              onPressed: () {
-                                // TODO: Handle log period
-                              },
                               child: Text(
                                 'Log Period',
                                 style: TextStyle(
@@ -225,23 +273,229 @@ class _HomeScreenState extends State<HomeScreen> {
                     label: 'Log Flow',
                     color: theme.colorScheme.primaryContainer,
                     iconColor: theme.colorScheme.primary,
-                    onTap: () {},
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const LogFlowScreen(),
+                        ),
+                      );
+                    },
                   ),
                   _buildQuickAction(
                     icon: Icons.mood,
                     label: 'Log Mood',
                     color: theme.colorScheme.secondaryContainer,
                     iconColor: theme.colorScheme.secondary,
-                    onTap: () {},
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const LogMoodScreen(),
+                        ),
+                      );
+                    },
                   ),
                   _buildQuickAction(
                     icon: Icons.favorite,
                     label: 'Symptoms',
                     color: theme.colorScheme.tertiaryContainer,
                     iconColor: theme.colorScheme.tertiary,
-                    onTap: () {},
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const LogSymptomsScreen(),
+                        ),
+                      );
+                    },
                   ),
                 ],
+              ),
+              const SizedBox(height: 30),
+
+              // Today's Log Section
+              Consumer<CycleProvider>(
+                builder: (context, cycleProvider, _) {
+                  final today = DateTime.now();
+                  final todaysLog = cycleProvider.getDailyLogForDate(today);
+
+                  return Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: theme.cardColor,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: theme.shadowColor.withValues(alpha: 0.06),
+                          blurRadius: 10,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Today\'s Log',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: theme.colorScheme.onSurface,
+                              ),
+                            ),
+                            Text(
+                              '${today.day}/${today.month}',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: theme.colorScheme.onSurface.withValues(
+                                  alpha: 0.6,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        if (todaysLog == null || !todaysLog.hasData) ...[
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.surfaceContainerHighest
+                                  .withValues(alpha: 0.3),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: theme.dividerColor,
+                                style: BorderStyle.solid,
+                              ),
+                            ),
+                            child: Column(
+                              children: [
+                                Icon(
+                                  Icons.edit_note,
+                                  color: theme.colorScheme.onSurface.withValues(
+                                    alpha: 0.5,
+                                  ),
+                                  size: 32,
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'No data logged for today',
+                                  style: TextStyle(
+                                    color: theme.colorScheme.onSurface
+                                        .withValues(alpha: 0.6),
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Use the buttons above to log your flow, mood, or symptoms',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: theme.colorScheme.onSurface
+                                        .withValues(alpha: 0.5),
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ] else ...[
+                          Row(
+                            children: [
+                              if (todaysLog.flowIntensity != null) ...[
+                                Expanded(
+                                  child: _buildTodayLogItem(
+                                    'Flow',
+                                    todaysLog.flowDisplayText,
+                                    Icons.water_drop,
+                                    theme.colorScheme.primary,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                              ],
+                              if (todaysLog.mood != null) ...[
+                                Expanded(
+                                  child: _buildTodayLogItem(
+                                    'Mood',
+                                    todaysLog.moodDisplayText,
+                                    Icons.mood,
+                                    theme.colorScheme.secondary,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                              ],
+                              if (todaysLog.symptoms.isNotEmpty)
+                                Expanded(
+                                  child: _buildTodayLogItem(
+                                    'Symptoms',
+                                    '${todaysLog.symptoms.length} logged',
+                                    Icons.favorite,
+                                    theme.colorScheme.tertiary,
+                                  ),
+                                ),
+                            ],
+                          ),
+                          if (todaysLog.symptoms.isNotEmpty) ...[
+                            const SizedBox(height: 12),
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.tertiaryContainer
+                                    .withValues(alpha: 0.3),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Symptoms:',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color:
+                                          theme.colorScheme.onTertiaryContainer,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Wrap(
+                                    spacing: 6,
+                                    runSpacing: 4,
+                                    children: todaysLog.symptoms.map((symptom) {
+                                      return Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 2,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: theme.colorScheme.tertiary
+                                              .withValues(alpha: 0.2),
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          symptom,
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            color: theme
+                                                .colorScheme
+                                                .onTertiaryContainer,
+                                          ),
+                                        ),
+                                      );
+                                    }).toList(),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ],
+                      ],
+                    ),
+                  );
+                },
               ),
               const SizedBox(height: 30),
 
@@ -274,16 +528,34 @@ class _HomeScreenState extends State<HomeScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        _buildStatItem('Cycle Length', '28 days', Icons.loop),
-                        _buildStatItem('Period Length', '5 days', Icons.calendar_today),
+                        _buildStatItem(
+                          'Cycle Length',
+                          '${cycleProvider.averageCycleLength} days',
+                          Icons.loop,
+                        ),
+                        _buildStatItem(
+                          'Period Length',
+                          '${cycleProvider.averagePeriodLength} days',
+                          Icons.calendar_today,
+                        ),
                       ],
                     ),
                     const SizedBox(height: 16),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        _buildStatItem('Next Period', '12 days', Icons.schedule),
-                        _buildStatItem('Fertile Window', '6 days', Icons.eco),
+                        _buildStatItem(
+                          'Next Period',
+                          currentCycle != null
+                              ? '${28 - cycleProvider.currentCycleDay} days'
+                              : 'Track to see',
+                          Icons.schedule,
+                        ),
+                        _buildStatItem(
+                          'Fertile Window',
+                          cycleProvider.pregnancyChanceLabel,
+                          Icons.eco,
+                        ),
                       ],
                     ),
                   ],
@@ -307,60 +579,73 @@ class _HomeScreenState extends State<HomeScreen> {
                 itemCount: cycleProvider.cycles.take(3).length,
                 itemBuilder: (context, index) {
                   final cycle = cycleProvider.cycles[index];
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: theme.cardColor,
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: theme.shadowColor.withValues(alpha: 0.04),
-                          blurRadius: 8,
-                          offset: const Offset(0, 1),
+                  return GestureDetector(
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              LogPeriodScreen(existingCycle: cycle),
                         ),
-                      ],
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 12,
-                          height: 12,
-                          decoration: const BoxDecoration(
-                            color: Colors.pinkAccent,
-                            shape: BoxShape.circle,
+                      );
+                    },
+                    child: Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: theme.cardColor,
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: theme.shadowColor.withValues(alpha: 0.04),
+                            blurRadius: 8,
+                            offset: const Offset(0, 1),
                           ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                '${cycle.periodStartDate.day}/${cycle.periodStartDate.month}/${cycle.periodStartDate.year}',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  color: theme.colorScheme.onSurface,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                '${cycle.cycleLength} day cycle',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                                ),
-                              ),
-                            ],
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 12,
+                            height: 12,
+                            decoration: const BoxDecoration(
+                              color: Colors.pinkAccent,
+                              shape: BoxShape.circle,
+                            ),
                           ),
-                        ),
-                        Icon(
-                          Icons.arrow_forward_ios,
-                          size: 16,
-                          color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
-                        ),
-                      ],
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '${cycle.periodStartDate.day}/${cycle.periodStartDate.month}/${cycle.periodStartDate.year}${cycle.periodEndDate != null ? ' - ${cycle.periodEndDate!.day}/${cycle.periodEndDate!.month}/${cycle.periodEndDate!.year}' : ''}',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                    color: theme.colorScheme.onSurface,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Flow: ${cycle.flowIntensity} • Length: ${cycle.periodLength} days',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: theme.colorScheme.onSurface
+                                        .withValues(alpha: 0.6),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Icon(
+                            Icons.arrow_forward_ios,
+                            size: 16,
+                            color: theme.colorScheme.onSurface.withValues(
+                              alpha: 0.4,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   );
                 },
@@ -380,7 +665,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       Icon(
                         Icons.calendar_today_outlined,
                         size: 48,
-                        color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.4,
+                        ),
                       ),
                       const SizedBox(height: 12),
                       Text(
@@ -388,7 +675,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w500,
-                          color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                          color: theme.colorScheme.onSurface.withValues(
+                            alpha: 0.6,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -396,7 +685,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         'Start tracking your cycle to see insights',
                         style: TextStyle(
                           fontSize: 14,
-                          color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                          color: theme.colorScheme.onSurface.withValues(
+                            alpha: 0.5,
+                          ),
                         ),
                       ),
                     ],
@@ -407,7 +698,6 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
       bottomNavigationBar: Container(
-        height: 80,
         decoration: BoxDecoration(
           color: theme.cardColor,
           boxShadow: [
@@ -418,32 +708,33 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
         ),
-        child: BottomNavigationBar(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          type: BottomNavigationBarType.fixed,
-          currentIndex: _currentIndex,
-          onTap: _onTabTapped,
-          selectedItemColor: theme.colorScheme.primary,
-          unselectedItemColor: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-          items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.home),
-              label: 'Home',
+        child: SafeArea(
+          child: BottomNavigationBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            type: BottomNavigationBarType.fixed,
+            currentIndex: _currentIndex,
+            onTap: _onTabTapped,
+            selectedItemColor: theme.colorScheme.primary,
+            unselectedItemColor: theme.colorScheme.onSurface.withValues(
+              alpha: 0.6,
             ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.calendar_today),
-              label: 'Calendar',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.insights),
-              label: 'Insights',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.person),
-              label: 'Profile',
-            ),
-          ],
+            items: const [
+              BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.calendar_today),
+                label: 'Calendar',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.insights),
+                label: 'Insights',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.person),
+                label: 'Profile',
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -476,11 +767,7 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              icon,
-              color: iconColor,
-              size: 32,
-            ),
+            Icon(icon, color: iconColor, size: 32),
             const SizedBox(height: 8),
             Text(
               label,
@@ -503,11 +790,7 @@ class _HomeScreenState extends State<HomeScreen> {
       children: [
         Row(
           children: [
-            Icon(
-              icon,
-              size: 16,
-              color: theme.colorScheme.primary,
-            ),
+            Icon(icon, size: 16, color: theme.colorScheme.primary),
             const SizedBox(width: 4),
             Text(
               title,
@@ -528,6 +811,47 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildTodayLogItem(
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 16, color: color),
+          const SizedBox(height: 6),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: theme.colorScheme.onSurface,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

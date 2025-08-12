@@ -1,1 +1,33 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"menstrual-cycle-app-bebd6","appId":"1:720482382655:android:f9b8db0e9dacddc3d0598a","fileOutput":"android/app/google-services.json"}},"ios":{"default":{"projectId":"menstrual-cycle-app-bebd6","appId":"1:720482382655:ios:824c05cb689cc8aed0598a","uploadDebugSymbols":false,"fileOutput":"ios/Runner/GoogleService-Info.plist"}},"dart":{"lib/firebase_options.dart":{"projectId":"menstrual-cycle-app-bebd6","configurations":{"android":"1:720482382655:android:f9b8db0e9dacddc3d0598a","ios":"1:720482382655:ios:824c05cb689cc8aed0598a"}}}}}}
+{
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "menstrual-cycle-app-bebd6",
+          "appId": "1:720482382655:android:f9b8db0e9dacddc3d0598a",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "ios": {
+        "default": {
+          "projectId": "menstrual-cycle-app-bebd6",
+          "appId": "1:720482382655:ios:824c05cb689cc8aed0598a",
+          "uploadDebugSymbols": false,
+          "fileOutput": "ios/Runner/GoogleService-Info.plist"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "menstrual-cycle-app-bebd6",
+          "configurations": {
+            "android": "1:720482382655:android:f9b8db0e9dacddc3d0598a",
+            "ios": "1:720482382655:ios:824c05cb689cc8aed0598a"
+          }
+        }
+      }
+    }
+  }
+}
