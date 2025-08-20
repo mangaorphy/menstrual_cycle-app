@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/cycle_provider.dart';
-import 'settings_screen.dart';
-import 'log_period_screen.dart';
-import 'calendar_screen.dart';
+import '../providers/theme_provider.dart';
+import '../providers/language_provider.dart';
+import '../l10n/app_localizations.dart';
+import '../l10n/app_localizations_en.dart';
+import '../l10n/app_localizations_sn.dart';
 import 'insights_screen.dart';
-import 'log_flow_screen.dart';
-import 'log_mood_screen.dart';
-import 'log_symptoms_screen.dart';
-import 'notification_settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -17,770 +15,143 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
-  int _currentIndex = 0;
+class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
+  // Helper method to get the correct localizations based on user's language choice
+  AppLocalizations _getLocalizations(BuildContext context) {
+    final languageProvider = Provider.of<LanguageProvider>(
+      context,
+      listen: false,
+    );
+    if (languageProvider.locale.languageCode == 'sn') {
+      return AppLocalizationsSn();
+    } else {
+      return AppLocalizationsEn();
+    }
+  }
+
+  late AnimationController _pulseController;
+  late AnimationController _slideController;
+  late AnimationController _rotateController;
+  late AnimationController _bounceController;
+  late Animation<double> _pulseAnimation;
+  late Animation<Offset> _slideAnimation;
+  late Animation<double> _rotateAnimation;
+  late Animation<double> _bounceAnimation;
 
   @override
   void initState() {
     super.initState();
-    // Use addPostFrameCallback to avoid calling during build
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _refreshData();
-    });
+
+    // Initialize animations
+    _pulseController = AnimationController(
+      duration: const Duration(seconds: 2),
+      vsync: this,
+    )..repeat(reverse: true);
+
+    _slideController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    );
+
+    _rotateController = AnimationController(
+      duration: const Duration(seconds: 3),
+      vsync: this,
+    )..repeat();
+
+    _bounceController = AnimationController(
+      duration: const Duration(milliseconds: 1000),
+      vsync: this,
+    );
+
+    _pulseAnimation = Tween<double>(begin: 0.8, end: 1.2).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.3),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _slideController, curve: Curves.easeOut));
+
+    _rotateAnimation = Tween<double>(
+      begin: 0,
+      end: 1,
+    ).animate(_rotateController);
+
+    _bounceAnimation = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(parent: _bounceController, curve: Curves.elasticOut),
+    );
+
+    // Start animations
+    _slideController.forward();
+    _bounceController.forward();
   }
 
-  Future<void> _refreshData() async {
-    final cycleProvider = Provider.of<CycleProvider>(context, listen: false);
-    await cycleProvider.refreshData();
-    await cycleProvider.initializeNotifications();
-  }
-
-  void _onTabTapped(int index) {
-    if (index == _currentIndex) {
-      return; // Don't navigate if already on the same tab
-    }
-
-    switch (index) {
-      case 0:
-        // Home - already here
-        setState(() {
-          _currentIndex = index;
-        });
-        break;
-      case 1:
-        // Calendar
-        Navigator.of(
-          context,
-        ).push(MaterialPageRoute(builder: (context) => const CalendarScreen()));
-        break;
-      case 2:
-        // Insights
-        Navigator.of(
-          context,
-        ).push(MaterialPageRoute(builder: (context) => const InsightsScreen()));
-        break;
-      case 3:
-        // Profile/Settings
-        Navigator.of(
-          context,
-        ).push(MaterialPageRoute(builder: (context) => const SettingsScreen()));
-        break;
-    }
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    _slideController.dispose();
+    _rotateController.dispose();
+    _bounceController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final cycleProvider = Provider.of<CycleProvider>(context);
-    final currentCycle = cycleProvider.currentCycle;
-    final theme = Theme.of(context);
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDarkMode = themeProvider.themeMode == ThemeMode.dark;
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: Container(
-          margin: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: theme.cardColor,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: theme.shadowColor.withValues(alpha: 0.05),
-                blurRadius: 10,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: IconButton(
-            icon: const Icon(
-              Icons.settings,
-              color: Colors.pinkAccent,
-              size: 22,
-            ),
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (context) => const SettingsScreen()),
-              );
-            },
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: isDarkMode
+                ? [
+                    const Color(0xFF1A1A2E),
+                    const Color(0xFF16213E),
+                    const Color(0xFF0F3460),
+                  ]
+                : [
+                    const Color(0xFFF7FAFC),
+                    const Color(0xFFEDF2F7),
+                    const Color(0xFFE2E8F0),
+                  ],
           ),
         ),
-        actions: [
-          Container(
-            margin: const EdgeInsets.only(right: 16, top: 8, bottom: 8),
-            decoration: BoxDecoration(
-              color: theme.cardColor,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: theme.shadowColor.withValues(alpha: 0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 2),
+        child: Stack(
+          children: [
+            // Floating background elements
+            _buildFloatingElements(),
+            SafeArea(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 20,
                 ),
-              ],
-            ),
-            child: IconButton(
-              icon: const Icon(
-                Icons.notifications,
-                color: Colors.pinkAccent,
-                size: 22,
-              ),
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => const NotificationSettingsScreen(),
-                  ),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Greeting Section
-              Text(
-                'Hello, beautiful! 💕',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: theme.colorScheme.onSurface,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'How are you feeling today?',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                ),
-              ),
-              const SizedBox(height: 30),
-
-              // Current Cycle Card
-              Container(
-                width: double.infinity,
-                height: 200,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFFF48FB1), Color(0xFFCE93D8)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.pink.withValues(alpha: 0.2),
-                      blurRadius: 15,
-                      offset: const Offset(0, 5),
-                    ),
-                  ],
-                ),
-                child: Stack(
-                  children: [
-                    // Background pattern
-                    Positioned(
-                      right: -20,
-                      top: -20,
-                      child: Icon(
-                        Icons.favorite,
-                        size: 100,
-                        color: theme.colorScheme.onPrimary.withValues(
-                          alpha: 0.1,
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      left: -10,
-                      bottom: -10,
-                      child: Icon(
-                        Icons.spa,
-                        size: 80,
-                        color: theme.colorScheme.onPrimary.withValues(
-                          alpha: 0.1,
-                        ),
-                      ),
-                    ),
-                    // Content
-                    Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            currentCycle != null
-                                ? 'Current Cycle Day'
-                                : 'Track Your Cycle',
-                            style: TextStyle(
-                              color: theme.colorScheme.onPrimary,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            currentCycle != null
-                                ? cycleProvider.currentCycleDay.toString()
-                                : 'Start Today',
-                            style: TextStyle(
-                              color: theme.colorScheme.onPrimary,
-                              fontSize: 48,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const Spacer(),
-                          GestureDetector(
-                            onTap: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (context) => const LogPeriodScreen(),
-                                ),
-                              );
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 20,
-                                vertical: 12,
-                              ),
-                              decoration: BoxDecoration(
-                                color: theme.colorScheme.onPrimary.withValues(
-                                  alpha: 0.2,
-                                ),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Text(
-                                'Log Period',
-                                style: TextStyle(
-                                  color: theme.colorScheme.onPrimary,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 30),
-
-              // Quick Actions
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _buildQuickAction(
-                    icon: Icons.water_drop,
-                    label: 'Log Flow',
-                    color: theme.colorScheme.primaryContainer,
-                    iconColor: theme.colorScheme.primary,
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => const LogFlowScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildQuickAction(
-                    icon: Icons.mood,
-                    label: 'Log Mood',
-                    color: theme.colorScheme.secondaryContainer,
-                    iconColor: theme.colorScheme.secondary,
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => const LogMoodScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildQuickAction(
-                    icon: Icons.favorite,
-                    label: 'Symptoms',
-                    color: theme.colorScheme.tertiaryContainer,
-                    iconColor: theme.colorScheme.tertiary,
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => const LogSymptomsScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-              const SizedBox(height: 30),
-
-              // Today's Log Section
-              Consumer<CycleProvider>(
-                builder: (context, cycleProvider, _) {
-                  final today = DateTime.now();
-                  final todaysLog = cycleProvider.getDailyLogForDate(today);
-
-                  return Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: theme.cardColor,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: theme.shadowColor.withValues(alpha: 0.06),
-                          blurRadius: 10,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'Today\'s Log',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: theme.colorScheme.onSurface,
-                              ),
-                            ),
-                            Text(
-                              '${today.day}/${today.month}',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: theme.colorScheme.onSurface.withValues(
-                                  alpha: 0.6,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        if (todaysLog == null || !todaysLog.hasData) ...[
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.surfaceContainerHighest
-                                  .withValues(alpha: 0.3),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: theme.dividerColor,
-                                style: BorderStyle.solid,
-                              ),
-                            ),
-                            child: Column(
-                              children: [
-                                Icon(
-                                  Icons.edit_note,
-                                  color: theme.colorScheme.onSurface.withValues(
-                                    alpha: 0.5,
-                                  ),
-                                  size: 32,
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  'No data logged for today',
-                                  style: TextStyle(
-                                    color: theme.colorScheme.onSurface
-                                        .withValues(alpha: 0.6),
-                                    fontSize: 14,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Use the buttons above to log your flow, mood, or symptoms',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    color: theme.colorScheme.onSurface
-                                        .withValues(alpha: 0.5),
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ] else ...[
-                          Row(
-                            children: [
-                              if (todaysLog.flowIntensity != null) ...[
-                                Expanded(
-                                  child: _buildTodayLogItem(
-                                    'Flow',
-                                    todaysLog.flowDisplayText,
-                                    Icons.water_drop,
-                                    theme.colorScheme.primary,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                              ],
-                              if (todaysLog.mood != null) ...[
-                                Expanded(
-                                  child: _buildTodayLogItem(
-                                    'Mood',
-                                    todaysLog.moodDisplayText,
-                                    Icons.mood,
-                                    theme.colorScheme.secondary,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                              ],
-                              if (todaysLog.symptoms.isNotEmpty)
-                                Expanded(
-                                  child: _buildTodayLogItem(
-                                    'Symptoms',
-                                    '${todaysLog.symptoms.length} logged',
-                                    Icons.favorite,
-                                    theme.colorScheme.tertiary,
-                                  ),
-                                ),
-                            ],
-                          ),
-                          if (todaysLog.symptoms.isNotEmpty) ...[
-                            const SizedBox(height: 12),
-                            Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: theme.colorScheme.tertiaryContainer
-                                    .withValues(alpha: 0.3),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Symptoms:',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                      color:
-                                          theme.colorScheme.onTertiaryContainer,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Wrap(
-                                    spacing: 6,
-                                    runSpacing: 4,
-                                    children: todaysLog.symptoms.map((symptom) {
-                                      return Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 8,
-                                          vertical: 2,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: theme.colorScheme.tertiary
-                                              .withValues(alpha: 0.2),
-                                          borderRadius: BorderRadius.circular(
-                                            12,
-                                          ),
-                                        ),
-                                        child: Text(
-                                          symptom,
-                                          style: TextStyle(
-                                            fontSize: 10,
-                                            color: theme
-                                                .colorScheme
-                                                .onTertiaryContainer,
-                                          ),
-                                        ),
-                                      );
-                                    }).toList(),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ],
-                      ],
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(height: 30),
-
-              // Stats Section
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: theme.cardColor,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: theme.shadowColor.withValues(alpha: 0.06),
-                      blurRadius: 10,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'This Month',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.onSurface,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        _buildStatItem(
-                          'Cycle Length',
-                          '${cycleProvider.averageCycleLength} days',
-                          Icons.loop,
-                        ),
-                        _buildStatItem(
-                          'Period Length',
-                          '${cycleProvider.averagePeriodLength} days',
-                          Icons.calendar_today,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        _buildStatItem(
-                          'Next Period',
-                          currentCycle != null
-                              ? '${28 - cycleProvider.currentCycleDay} days'
-                              : 'Track to see',
-                          Icons.schedule,
-                        ),
-                        _buildStatItem(
-                          'Fertile Window',
-                          cycleProvider.pregnancyChanceLabel,
-                          Icons.eco,
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 30),
-
-              // Recent Cycles
-              Text(
-                'Recent Cycles',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: theme.colorScheme.onSurface,
-                ),
-              ),
-              const SizedBox(height: 16),
-              ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: cycleProvider.cycles.take(3).length,
-                itemBuilder: (context, index) {
-                  final cycle = cycleProvider.cycles[index];
-                  return GestureDetector(
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              LogPeriodScreen(existingCycle: cycle),
-                        ),
-                      );
-                    },
-                    child: Container(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: theme.cardColor,
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: theme.shadowColor.withValues(alpha: 0.04),
-                            blurRadius: 8,
-                            offset: const Offset(0, 1),
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 12,
-                            height: 12,
-                            decoration: const BoxDecoration(
-                              color: Colors.pinkAccent,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  '${cycle.periodStartDate.day}/${cycle.periodStartDate.month}/${cycle.periodStartDate.year}${cycle.periodEndDate != null ? ' - ${cycle.periodEndDate!.day}/${cycle.periodEndDate!.month}/${cycle.periodEndDate!.year}' : ''}',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                    color: theme.colorScheme.onSurface,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Flow: ${cycle.flowIntensity} • Length: ${cycle.periodLength} days',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: theme.colorScheme.onSurface
-                                        .withValues(alpha: 0.6),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Icon(
-                            Icons.arrow_forward_ios,
-                            size: 16,
-                            color: theme.colorScheme.onSurface.withValues(
-                              alpha: 0.4,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-              if (cycleProvider.cycles.isEmpty)
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: theme.cardColor,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: theme.colorScheme.outline.withValues(alpha: 0.2),
-                    ),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: MediaQuery.of(context).size.width - 32,
                   ),
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(
-                        Icons.calendar_today_outlined,
-                        size: 48,
-                        color: theme.colorScheme.onSurface.withValues(
-                          alpha: 0.4,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'No cycles tracked yet',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          color: theme.colorScheme.onSurface.withValues(
-                            alpha: 0.6,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Start tracking your cycle to see insights',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: theme.colorScheme.onSurface.withValues(
-                            alpha: 0.5,
-                          ),
-                        ),
-                      ),
+                      const SizedBox(height: 20),
+                      _buildAnimatedGreeting(),
+                      const SizedBox(height: 30),
+                      _buildCycleOverview(cycleProvider),
+                      const SizedBox(height: 30),
+                      _buildQuickActions(),
+                      const SizedBox(height: 30),
+                      _buildProductGuideSection(),
+                      const SizedBox(height: 30),
+                      _buildHealthInsights(),
+                      const SizedBox(height: 30),
+                      _buildTodaysReminders(),
                     ],
                   ),
                 ),
-            ],
-          ),
-        ),
-      ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: theme.cardColor,
-          boxShadow: [
-            BoxShadow(
-              color: theme.shadowColor.withValues(alpha: 0.08),
-              blurRadius: 20,
-              offset: const Offset(0, -5),
-            ),
-          ],
-        ),
-        child: SafeArea(
-          child: BottomNavigationBar(
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            type: BottomNavigationBarType.fixed,
-            currentIndex: _currentIndex,
-            onTap: _onTabTapped,
-            selectedItemColor: theme.colorScheme.primary,
-            unselectedItemColor: theme.colorScheme.onSurface.withValues(
-              alpha: 0.6,
-            ),
-            items: const [
-              BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.calendar_today),
-                label: 'Calendar',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.insights),
-                label: 'Insights',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.person),
-                label: 'Profile',
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildQuickAction({
-    required IconData icon,
-    required String label,
-    required Color color,
-    required Color iconColor,
-    required VoidCallback onTap,
-  }) {
-    final theme = Theme.of(context);
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 100,
-        height: 100,
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: iconColor.withValues(alpha: 0.2),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: iconColor, size: 32),
-            const SizedBox(height: 8),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: theme.colorScheme.onSurface,
               ),
             ),
           ],
@@ -789,75 +160,1048 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildStatItem(String title, String value, IconData icon) {
-    final theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildFloatingElements() {
+    return Stack(
       children: [
-        Row(
-          children: [
-            Icon(icon, size: 16, color: theme.colorScheme.primary),
-            const SizedBox(width: 4),
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 12,
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-              ),
+        // Floating element 1
+        Positioned(
+          top: 100,
+          right: 50,
+          child: RotationTransition(
+            turns: _rotateAnimation,
+            child: Opacity(
+              opacity: 0.3,
+              child: Text('🌙', style: TextStyle(fontSize: 40)),
             ),
-          ],
+          ),
         ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: theme.colorScheme.onSurface,
+        // Floating element 2
+        Positioned(
+          top: 200,
+          left: 30,
+          child: ScaleTransition(
+            scale: _pulseAnimation,
+            child: Opacity(
+              opacity: 0.2,
+              child: Text('⭐', style: TextStyle(fontSize: 30)),
+            ),
+          ),
+        ),
+        // Floating element 3
+        Positioned(
+          top: 400,
+          right: 20,
+          child: RotationTransition(
+            turns: _rotateAnimation,
+            child: Opacity(
+              opacity: 0.25,
+              child: Text('🌸', style: TextStyle(fontSize: 35)),
+            ),
+          ),
+        ),
+        // Floating element 4
+        Positioned(
+          bottom: 200,
+          left: 40,
+          child: ScaleTransition(
+            scale: _bounceAnimation,
+            child: Opacity(
+              opacity: 0.2,
+              child: Text('💫', style: TextStyle(fontSize: 25)),
+            ),
+          ),
+        ),
+        // Floating element 5
+        Positioned(
+          bottom: 300,
+          right: 60,
+          child: RotationTransition(
+            turns: _rotateAnimation,
+            child: Opacity(
+              opacity: 0.15,
+              child: Text('🦋', style: TextStyle(fontSize: 45)),
+            ),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildTodayLogItem(
-    String title,
-    String value,
-    IconData icon,
-    Color color,
-  ) {
-    final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, size: 16, color: color),
-          const SizedBox(height: 6),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+  Widget _buildAnimatedGreeting() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final primaryTextColor = isDarkMode
+        ? Colors.white
+        : const Color(0xFF2D3748);
+    final secondaryTextColor = isDarkMode
+        ? Colors.white.withOpacity(0.8)
+        : const Color(0xFF4A5568);
+    final containerColor = isDarkMode
+        ? Colors.white.withOpacity(0.1)
+        : Colors.white.withOpacity(0.9);
+    final borderColor = isDarkMode
+        ? Colors.white.withOpacity(0.2)
+        : Colors.grey.withOpacity(0.3);
+
+    return SlideTransition(
+      position: _slideAnimation,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: containerColor,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: borderColor),
+          boxShadow: isDarkMode
+              ? []
+              : [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              flex: 3,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TweenAnimationBuilder<double>(
+                    duration: const Duration(milliseconds: 1000),
+                    tween: Tween<double>(begin: 0, end: 1),
+                    builder: (context, value, child) {
+                      return Opacity(
+                        opacity: value,
+                        child: Text(
+                          _getGreeting(),
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: primaryTextColor,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 2,
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  TweenAnimationBuilder<double>(
+                    duration: const Duration(milliseconds: 1200),
+                    tween: Tween<double>(begin: 0, end: 1),
+                    builder: (context, value, child) {
+                      return Opacity(
+                        opacity: value,
+                        child: Text(
+                          'How are you feeling today?',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: secondaryTextColor,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: theme.colorScheme.onSurface,
+            Expanded(
+              flex: 1,
+              child: Stack(
+                children: [
+                  ScaleTransition(
+                    scale: _pulseAnimation,
+                    child: Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        color: Colors.pink.withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(40),
+                      ),
+                      child: const Icon(
+                        Icons.favorite,
+                        color: Colors.white,
+                        size: 40,
+                      ),
+                    ),
+                  ),
+                  // Floating emojis around the heart
+                  Positioned(
+                    top: -10,
+                    right: -5,
+                    child: ScaleTransition(
+                      scale: _pulseAnimation,
+                      child: const Text('✨', style: TextStyle(fontSize: 20)),
+                    ),
+                  ),
+                  Positioned(
+                    bottom: -5,
+                    left: -10,
+                    child: RotationTransition(
+                      turns: _rotateAnimation,
+                      child: const Text('🌸', style: TextStyle(fontSize: 16)),
+                    ),
+                  ),
+                  Positioned(
+                    top: 10,
+                    left: -15,
+                    child: ScaleTransition(
+                      scale: _bounceAnimation,
+                      child: const Text('💖', style: TextStyle(fontSize: 14)),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
+  }
+
+  Widget _buildCycleOverview(CycleProvider cycleProvider) {
+    return ScaleTransition(
+      scale: _bounceAnimation,
+      child: Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Colors.pink.withOpacity(0.8),
+              Colors.purple.withOpacity(0.8),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(25),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.pink.withOpacity(0.3),
+              blurRadius: 15,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  _getLocalizations(context).cycleOverview,
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                RotationTransition(
+                  turns: _rotateAnimation,
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.sync,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Flexible(
+                  flex: 2,
+                  child: _buildCycleInfo(
+                    'Day',
+                    '${cycleProvider.currentCycleDay}',
+                    'of ${cycleProvider.averageCycleLength}',
+                  ),
+                ),
+                Container(
+                  width: 1,
+                  height: 40,
+                  margin: const EdgeInsets.symmetric(horizontal: 8),
+                  color: Colors.white.withOpacity(0.3),
+                ),
+                Flexible(
+                  flex: 2,
+                  child: _buildCycleInfo(
+                    'Phase',
+                    _getCurrentPhase(cycleProvider),
+                    _getPhaseEmoji(cycleProvider),
+                  ),
+                ),
+                Container(
+                  width: 1,
+                  height: 40,
+                  margin: const EdgeInsets.symmetric(horizontal: 8),
+                  color: Colors.white.withOpacity(0.3),
+                ),
+                Flexible(
+                  flex: 2,
+                  child: _buildCycleInfo(
+                    _getLocalizations(context).nextPeriod,
+                    _getNextPeriodLabel(cycleProvider),
+                    _getNextPeriodEmoji(cycleProvider),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCycleInfo(String label, String value, String subtitle) {
+    return Column(
+      children: [
+        Text(
+          label,
+          style: const TextStyle(fontSize: 14, color: Colors.white),
+          overflow: TextOverflow.ellipsis,
+          maxLines: 1,
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+          overflow: TextOverflow.ellipsis,
+          maxLines: 1,
+        ),
+        Text(
+          subtitle,
+          style: const TextStyle(fontSize: 12, color: Colors.white70),
+          overflow: TextOverflow.ellipsis,
+          maxLines: 1,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildQuickActions() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final titleColor = isDarkMode ? Colors.white : const Color(0xFF2D3748);
+    final cardColor = isDarkMode
+        ? Colors.white.withOpacity(0.1)
+        : Colors.white.withOpacity(0.9);
+    final textColor = isDarkMode ? Colors.white : const Color(0xFF2D3748);
+
+    // Get localizations with fallback
+    AppLocalizations? localizations;
+    try {
+      localizations = _getLocalizations(context);
+    } catch (e) {
+      localizations = null;
+    }
+
+    final actions = [
+      {
+        'title': localizations?.logPeriod ?? 'Log Period',
+        'icon': Icons.water_drop,
+        'color': Colors.red,
+        'emoji': '🩸',
+        'onTap': () => Navigator.pushNamed(context, '/log-period'),
+      },
+      {
+        'title': localizations?.logMood ?? 'Track Mood',
+        'icon': Icons.mood,
+        'color': Colors.orange,
+        'emoji': '😊',
+        'onTap': () => Navigator.pushNamed(context, '/log-mood'),
+      },
+      {
+        'title': localizations?.logSymptoms ?? 'Symptoms',
+        'icon': Icons.health_and_safety,
+        'color': Colors.green,
+        'emoji': '💊',
+        'onTap': () => Navigator.pushNamed(context, '/log-symptoms'),
+      },
+      {
+        'title': 'Flow',
+        'icon': Icons.trending_up,
+        'color': Colors.blue,
+        'emoji': '📈',
+        'onTap': () => Navigator.pushNamed(context, '/log-flow'),
+      },
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(
+              'Quick Actions',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: titleColor,
+              ),
+            ),
+            const SizedBox(width: 10),
+            const Text('✨', style: TextStyle(fontSize: 20)),
+          ],
+        ),
+        const SizedBox(height: 20),
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            crossAxisSpacing: 16,
+            mainAxisSpacing: 16,
+            childAspectRatio: 1.15,
+          ),
+          itemCount: actions.length,
+          itemBuilder: (context, index) {
+            final action = actions[index];
+            return Material(
+              elevation: 4,
+              shadowColor: (action['color'] as Color).withOpacity(0.2),
+              borderRadius: BorderRadius.circular(24),
+              child: InkWell(
+                onTap: action['onTap'] as VoidCallback,
+                borderRadius: BorderRadius.circular(24),
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [cardColor, cardColor],
+                    ),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(
+                      color: (action['color'] as Color).withOpacity(0.2),
+                      width: 2,
+                    ),
+                    boxShadow: isDarkMode
+                        ? [
+                            BoxShadow(
+                              color: (action['color'] as Color).withOpacity(
+                                0.1,
+                              ),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ]
+                        : [
+                            BoxShadow(
+                              color: (action['color'] as Color).withOpacity(
+                                0.15,
+                              ),
+                              blurRadius: 12,
+                              offset: const Offset(0, 6),
+                            ),
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        // Icon container with gradient background
+                        Container(
+                          width: 56,
+                          height: 56,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                (action['color'] as Color).withOpacity(0.2),
+                                (action['color'] as Color).withOpacity(0.1),
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: (action['color'] as Color).withOpacity(
+                                0.3,
+                              ),
+                              width: 1,
+                            ),
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                action['emoji'] as String,
+                                style: const TextStyle(fontSize: 20),
+                              ),
+                              const SizedBox(height: 2),
+                              Icon(
+                                action['icon'] as IconData,
+                                color: action['color'] as Color,
+                                size: 16,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        // Title with better styling
+                        Text(
+                          action['title'] as String,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: textColor,
+                            letterSpacing: 0.2,
+                          ),
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildProductGuideSection() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final containerColor = isDarkMode
+        ? Colors.white.withOpacity(0.1)
+        : Colors.white.withOpacity(0.9);
+    final borderColor = isDarkMode
+        ? Colors.white.withOpacity(0.2)
+        : Colors.grey.withOpacity(0.3);
+    final titleColor = isDarkMode ? Colors.white : const Color(0xFF2D3748);
+    final textColor = isDarkMode
+        ? Colors.white.withOpacity(0.8)
+        : const Color(0xFF4A5568);
+
+    return TweenAnimationBuilder<double>(
+      duration: const Duration(milliseconds: 1800),
+      tween: Tween<double>(begin: 0, end: 1),
+      builder: (context, value, child) {
+        return Transform.translate(
+          offset: Offset(0, 30 * (1 - value)),
+          child: Opacity(
+            opacity: value,
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Theme.of(context).primaryColor.withOpacity(0.1),
+                    Theme.of(context).primaryColor.withOpacity(0.05),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: Theme.of(context).primaryColor.withOpacity(0.2),
+                  width: 1,
+                ),
+                boxShadow: isDarkMode
+                    ? []
+                    : [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 20,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              Theme.of(context).primaryColor,
+                              Theme.of(context).primaryColor.withOpacity(0.8),
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Theme.of(
+                                context,
+                              ).primaryColor.withOpacity(0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.school_rounded,
+                          color: Colors.white,
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Product Guides & Instructions',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: titleColor,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              'Discover helpful products and learn how to use them effectively for your menstrual health.',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: textColor,
+                                height: 1.4,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: containerColor,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: borderColor),
+                          ),
+                          child: Column(
+                            children: [
+                              Icon(
+                                Icons.inventory_2_rounded,
+                                color: Theme.of(context).primaryColor,
+                                size: 28,
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Product Catalog',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: titleColor,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: containerColor,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: borderColor),
+                          ),
+                          child: Column(
+                            children: [
+                              Icon(
+                                Icons.info_outline_rounded,
+                                color: Theme.of(context).primaryColor,
+                                size: 28,
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Usage Instructions',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: titleColor,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: containerColor,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: borderColor),
+                          ),
+                          child: Column(
+                            children: [
+                              Icon(
+                                Icons.tips_and_updates_rounded,
+                                color: Theme.of(context).primaryColor,
+                                size: 28,
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Expert Tips',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: titleColor,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          PageRouteBuilder(
+                            pageBuilder:
+                                (context, animation, secondaryAnimation) =>
+                                    const InsightsScreen(),
+                            transitionDuration: const Duration(
+                              milliseconds: 300,
+                            ),
+                            transitionsBuilder:
+                                (
+                                  context,
+                                  animation,
+                                  secondaryAnimation,
+                                  child,
+                                ) {
+                                  return SlideTransition(
+                                    position:
+                                        Tween<Offset>(
+                                          begin: const Offset(1.0, 0.0),
+                                          end: Offset.zero,
+                                        ).animate(
+                                          CurvedAnimation(
+                                            parent: animation,
+                                            curve: Curves.easeInOut,
+                                          ),
+                                        ),
+                                    child: child,
+                                  );
+                                },
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.arrow_forward_rounded, size: 20),
+                      label: const Text(
+                        'Explore Products',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Theme.of(context).primaryColor,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 16,
+                          horizontal: 24,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 3,
+                        shadowColor: Theme.of(
+                          context,
+                        ).primaryColor.withOpacity(0.3),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildHealthInsights() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final containerColor = isDarkMode
+        ? Colors.white.withOpacity(0.1)
+        : Colors.white.withOpacity(0.9);
+    final borderColor = isDarkMode
+        ? Colors.white.withOpacity(0.2)
+        : Colors.grey.withOpacity(0.3);
+    final titleColor = isDarkMode ? Colors.white : const Color(0xFF2D3748);
+    final textColor = isDarkMode
+        ? Colors.white.withOpacity(0.9)
+        : const Color(0xFF4A5568);
+
+    return TweenAnimationBuilder<double>(
+      duration: const Duration(milliseconds: 2000),
+      tween: Tween<double>(begin: 0, end: 1),
+      builder: (context, value, child) {
+        return Opacity(
+          opacity: value,
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: containerColor,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: borderColor),
+              boxShadow: isDarkMode
+                  ? []
+                  : [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    ScaleTransition(
+                      scale: _pulseAnimation,
+                      child: const Text('💡', style: TextStyle(fontSize: 28)),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Today\'s Insight',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: titleColor,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  _getTodaysInsight(),
+                  style: TextStyle(fontSize: 16, color: textColor, height: 1.5),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildTodaysReminders() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final titleColor = Colors.white;
+    final textColor = Colors.white.withOpacity(0.9);
+
+    return TweenAnimationBuilder<double>(
+      duration: const Duration(milliseconds: 2200),
+      tween: Tween<double>(begin: 0, end: 1),
+      builder: (context, value, child) {
+        return Transform.translate(
+          offset: Offset(0, (1 - value) * 50),
+          child: Opacity(
+            opacity: value,
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: isDarkMode
+                      ? [
+                          Colors.indigo.withOpacity(0.8),
+                          Colors.blue.withOpacity(0.8),
+                        ]
+                      : [const Color(0xFF667EEA), const Color(0xFF764BA2)],
+                ),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      RotationTransition(
+                        turns: _rotateAnimation,
+                        child: const Text('🔔', style: TextStyle(fontSize: 28)),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Gentle Reminders',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: titleColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  _buildReminderItem(
+                    '💧',
+                    'Stay hydrated - drink 8 glasses of water',
+                    textColor,
+                  ),
+                  const SizedBox(height: 8),
+                  _buildReminderItem(
+                    '🧘‍♀️',
+                    'Take a moment for mindfulness',
+                    textColor,
+                  ),
+                  const SizedBox(height: 8),
+                  _buildReminderItem(
+                    '📝',
+                    'Log your symptoms and mood',
+                    textColor,
+                  ),
+                  const SizedBox(height: 8),
+                  _buildReminderItem(
+                    '🌸',
+                    'You\'re amazing just as you are!',
+                    textColor,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildReminderItem(String emoji, String text, Color textColor) {
+    return Row(
+      children: [
+        ScaleTransition(
+          scale: _pulseAnimation,
+          child: Text(emoji, style: const TextStyle(fontSize: 20)),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(text, style: TextStyle(fontSize: 14, color: textColor)),
+        ),
+      ],
+    );
+  }
+
+  String _getGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return 'Good Morning, Beautiful! ☀️';
+    if (hour < 17) return 'Good Afternoon, Lovely! 🌤️';
+    return 'Good Evening, Gorgeous! 🌙';
+  }
+
+  String _getCurrentPhase(CycleProvider cycleProvider) {
+    final day = cycleProvider.currentCycleDay;
+    if (day <= 5) return 'Menstrual';
+    if (day <= 13) return 'Follicular';
+    if (day <= 16) return 'Ovulation';
+    return 'Luteal';
+  }
+
+  String _getPhaseEmoji(CycleProvider cycleProvider) {
+    final day = cycleProvider.currentCycleDay;
+    if (day <= 5) return '🩸';
+    if (day <= 13) return '🌱';
+    if (day <= 16) return '🌟';
+    return '🌙';
+  }
+
+  String _getTodaysInsight() {
+    final insights = [
+      'Your body is amazing! Every cycle is a testament to its incredible capabilities. 💪',
+      'Remember to listen to your body and give it the care it deserves. 🌺',
+      'Tracking your cycle helps you understand your body\'s natural rhythm. 🎵',
+      'Self-care isn\'t selfish - it\'s essential for your wellbeing. 🛁',
+      'You\'re doing great by taking charge of your health! 🌟',
+      'Every day is a new opportunity to nurture yourself. 🌸',
+      'Your menstrual cycle is a superpower - embrace it! ✨',
+    ];
+    return insights[DateTime.now().day % insights.length];
+  }
+
+  String _getNextPeriodLabel(CycleProvider cycleProvider) {
+    final languageProvider = Provider.of<LanguageProvider>(
+      context,
+      listen: false,
+    );
+    final isShona = languageProvider.locale.languageCode == 'sn';
+
+    // Get localizations with fallback
+    AppLocalizations? localizations;
+    try {
+      localizations = _getLocalizations(context);
+    } catch (e) {
+      localizations = null;
+    }
+
+    final daysUntil = cycleProvider.daysUntilNextPeriod;
+
+    if (daysUntil == 0) {
+      return isShona ? 'Nhasi' : 'Today';
+    }
+    if (daysUntil == 1) {
+      return isShona ? 'Mangwana' : 'Tomorrow';
+    }
+    if (daysUntil <= 7) {
+      final daysText = localizations?.daysAway ?? 'days';
+      return '$daysUntil $daysText';
+    }
+    if (daysUntil <= 14) {
+      final weekText = isShona ? 'vhiki' : 'week';
+      final weeksText = isShona ? 'mavhiki' : 'weeks';
+      final weekCount = (daysUntil / 7).round();
+      return '$weekCount ${weekCount > 1 ? weeksText : weekText}';
+    }
+    final daysText = localizations?.daysAway ?? 'days';
+    return '$daysUntil $daysText';
+  }
+
+  String _getNextPeriodEmoji(CycleProvider cycleProvider) {
+    final daysUntil = cycleProvider.daysUntilNextPeriod;
+    if (daysUntil == 0) return '🩸';
+    if (daysUntil <= 3) return '⏰';
+    if (daysUntil <= 7) return '📅';
+    if (daysUntil <= 14) return '🌸';
+    return '🗓️';
   }
 }

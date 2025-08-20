@@ -41,58 +41,63 @@ class _CalendarScreenState extends State<CalendarScreen> {
         ),
         centerTitle: true,
       ),
-      body: Column(
-        children: [
-          // Legend
-          Container(
-            margin: const EdgeInsets.all(16),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: theme.cardColor,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: theme.shadowColor.withValues(alpha: 0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Calendar Legend',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.onSurface,
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            // Legend
+            Container(
+              margin: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: theme.cardColor,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: theme.shadowColor.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 2),
                   ),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _buildLegendItem('Period', Colors.red.shade300, theme),
-                    _buildLegendItem('Fertile', Colors.green.shade300, theme),
-                    _buildLegendItem('Ovulation', Colors.blue.shade300, theme),
-                    _buildLegendItem('Safe', Colors.grey.shade300, theme),
-                  ],
-                ),
-              ],
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Calendar Legend',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _buildLegendItem('Period', Colors.red.shade300, theme),
+                      _buildLegendItem('Fertile', Colors.green.shade300, theme),
+                      _buildLegendItem(
+                        'Ovulation',
+                        Colors.blue.shade300,
+                        theme,
+                      ),
+                      _buildLegendItem('Safe', Colors.grey.shade300, theme),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
 
-          // Calendar
-          Expanded(
-            child: Container(
+            // Calendar
+            Container(
+              height: 400, // Fixed height to prevent overflow
               margin: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
                 color: theme.cardColor,
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
-                    color: theme.shadowColor.withValues(alpha: 0.05),
+                    color: theme.shadowColor.withOpacity(0.05),
                     blurRadius: 10,
                     offset: const Offset(0, 2),
                   ),
@@ -114,7 +119,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                     shape: BoxShape.circle,
                   ),
                   todayDecoration: BoxDecoration(
-                    color: theme.colorScheme.primary.withValues(alpha: 0.5),
+                    color: theme.colorScheme.primary.withOpacity(0.5),
                     shape: BoxShape.circle,
                   ),
                   defaultTextStyle: TextStyle(
@@ -176,27 +181,27 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 },
               ),
             ),
-          ),
 
-          // Selected Day Info
-          if (_selectedDay != null)
-            Container(
-              margin: const EdgeInsets.all(16),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: theme.cardColor,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: theme.shadowColor.withValues(alpha: 0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
+            // Selected Day Info
+            if (_selectedDay != null)
+              Container(
+                margin: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: theme.cardColor,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: theme.shadowColor.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: _buildSelectedDayInfo(cycleProvider, theme),
               ),
-              child: _buildSelectedDayInfo(cycleProvider, theme),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -252,7 +257,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
       backgroundColor = theme.colorScheme.primary;
       textColor = theme.colorScheme.onPrimary;
     } else if (isToday) {
-      backgroundColor = theme.colorScheme.primary.withValues(alpha: 0.5);
+      backgroundColor = theme.colorScheme.primary.withOpacity(0.5);
       textColor = theme.colorScheme.onPrimary;
     }
 
@@ -385,7 +390,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
           '${_selectedDay!.day}/${_selectedDay!.month}/${_selectedDay!.year}',
           style: TextStyle(
             fontSize: 14,
-            color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+            color: theme.colorScheme.onSurface.withOpacity(0.7),
           ),
         ),
         const SizedBox(height: 8),
@@ -393,7 +398,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
           description,
           style: TextStyle(
             fontSize: 14,
-            color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
+            color: theme.colorScheme.onSurface.withOpacity(0.8),
           ),
         ),
       ],

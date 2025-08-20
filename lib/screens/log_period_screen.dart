@@ -19,19 +19,12 @@ class _LogPeriodScreenState extends State<LogPeriodScreen> {
   List<String> _selectedSymptoms = [];
   String _notes = '';
   bool _isLoading = false;
-  bool get _isEditing => widget.existingCycle != null;
 
   final List<String> _flowTypes = ['Light', 'Normal', 'Heavy'];
   final List<String> _symptomsList = [
     'Cramps',
     'Bloating',
-    'Headache',
-    'Mood Swings',
-    'Back Pain',
-    'Fatigue',
-    'Nausea',
-    'Tender Breasts',
-    'Food Cravings',
+    // ... existing code
     'Acne',
   ];
 
@@ -159,8 +152,8 @@ class _LogPeriodScreenState extends State<LogPeriodScreen> {
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isOptional
-                ? theme.colorScheme.outline.withValues(alpha: 0.3)
-                : theme.colorScheme.primary.withValues(alpha: 0.3),
+                ? theme.colorScheme.outline.withOpacity(0.3)
+                : theme.colorScheme.primary.withOpacity(0.3),
           ),
         ),
         child: Row(
@@ -168,7 +161,7 @@ class _LogPeriodScreenState extends State<LogPeriodScreen> {
             Icon(
               Icons.calendar_today,
               color: isOptional
-                  ? theme.colorScheme.onSurface.withValues(alpha: 0.5)
+                  ? theme.colorScheme.onSurface.withOpacity(0.5)
                   : theme.colorScheme.primary,
             ),
             const SizedBox(width: 12),
@@ -179,7 +172,7 @@ class _LogPeriodScreenState extends State<LogPeriodScreen> {
                   label,
                   style: TextStyle(
                     fontSize: 14,
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                    color: theme.colorScheme.onSurface.withOpacity(0.7),
                   ),
                 ),
                 Text(
@@ -188,7 +181,7 @@ class _LogPeriodScreenState extends State<LogPeriodScreen> {
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                     color: isOptional
-                        ? theme.colorScheme.onSurface.withValues(alpha: 0.5)
+                        ? theme.colorScheme.onSurface.withOpacity(0.5)
                         : theme.colorScheme.onSurface,
                   ),
                 ),
@@ -198,7 +191,7 @@ class _LogPeriodScreenState extends State<LogPeriodScreen> {
             Icon(
               Icons.arrow_forward_ios,
               size: 16,
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+              color: theme.colorScheme.onSurface.withOpacity(0.4),
             ),
           ],
         ),
@@ -225,7 +218,7 @@ class _LogPeriodScreenState extends State<LogPeriodScreen> {
                 border: Border.all(
                   color: isSelected
                       ? theme.colorScheme.primary
-                      : theme.colorScheme.outline.withValues(alpha: 0.3),
+                      : theme.colorScheme.outline.withOpacity(0.3),
                 ),
               ),
               child: Column(
@@ -286,7 +279,7 @@ class _LogPeriodScreenState extends State<LogPeriodScreen> {
               border: Border.all(
                 color: isSelected
                     ? theme.colorScheme.primary
-                    : theme.colorScheme.outline.withValues(alpha: 0.3),
+                    : theme.colorScheme.outline.withOpacity(0.3),
               ),
             ),
             child: Text(
@@ -311,9 +304,7 @@ class _LogPeriodScreenState extends State<LogPeriodScreen> {
       decoration: BoxDecoration(
         color: theme.cardColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: theme.colorScheme.outline.withValues(alpha: 0.3),
-        ),
+        border: Border.all(color: theme.colorScheme.outline.withOpacity(0.3)),
       ),
       child: TextField(
         maxLines: 4,
@@ -323,7 +314,7 @@ class _LogPeriodScreenState extends State<LogPeriodScreen> {
           border: InputBorder.none,
           contentPadding: const EdgeInsets.all(16),
           hintStyle: TextStyle(
-            color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+            color: theme.colorScheme.onSurface.withOpacity(0.5),
           ),
         ),
         style: TextStyle(color: theme.colorScheme.onSurface),
@@ -500,38 +491,21 @@ class _LogPeriodScreenState extends State<LogPeriodScreen> {
               backgroundColor: Colors.green,
             ),
           );
+          Navigator.of(context).pop();
         }
       } else {
-        // Create new cycle
-        // Calculate cycle length (default to 28 if it's the first cycle)
-        int cycleLength = 28;
-        if (cycleProvider.cycles.isNotEmpty) {
-          final lastCycle = cycleProvider.cycles.first;
-          cycleLength = _selectedStartDate
-              .difference(lastCycle.periodStartDate)
-              .inDays;
-          // Ensure reasonable cycle length
-          if (cycleLength < 15 || cycleLength > 45) {
-            cycleLength = 28; // Default to standard cycle if unreasonable
-          }
-        }
-
-        // Calculate period length
-        int periodLength = 5; // default
-        if (_selectedEndDate != null) {
-          periodLength =
-              _selectedEndDate!.difference(_selectedStartDate).inDays + 1;
-        }
-
+        // Add new cycle
         final newCycle = CycleData(
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          id: DateTime.now().toIso8601String(),
           periodStartDate: _selectedStartDate,
           periodEndDate: _selectedEndDate,
-          cycleLength: cycleLength,
-          periodLength: periodLength,
           flowIntensity: _flowTypes[_selectedFlow],
           symptoms: _selectedSymptoms,
           notes: _notes.isEmpty ? null : _notes,
+          periodLength: _selectedEndDate != null
+              ? _selectedEndDate!.difference(_selectedStartDate).inDays + 1
+              : 5, // default
+          cycleLength: 28, // default, will be updated later
         );
 
         await cycleProvider.addCycle(newCycle);
@@ -539,15 +513,12 @@ class _LogPeriodScreenState extends State<LogPeriodScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Period logged successfully!'),
+              content: Text('Period saved successfully!'),
               backgroundColor: Colors.green,
             ),
           );
+          Navigator.of(context).pop();
         }
-      }
-
-      if (mounted) {
-        Navigator.of(context).pop();
       }
     } catch (e) {
       if (mounted) {

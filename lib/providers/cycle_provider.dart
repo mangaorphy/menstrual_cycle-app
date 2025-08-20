@@ -142,6 +142,21 @@ class CycleProvider with ChangeNotifier {
     }
   }
 
+  // Get a daily log for a specific date
+  DailyLog? getDailyLogForDate(DateTime date) {
+    final logDate = DateTime(date.year, date.month, date.day);
+    try {
+      return _dailyLogs.firstWhere(
+        (log) =>
+            log.date.year == logDate.year &&
+            log.date.month == logDate.month &&
+            log.date.day == logDate.day,
+      );
+    } catch (e) {
+      return null; // Return null if no log is found
+    }
+  }
+
   // Load cycles from Firestore
   Future<void> _loadCyclesFromFirestore() async {
     if (_userId == null) return;
@@ -187,7 +202,7 @@ class CycleProvider with ChangeNotifier {
       final querySnapshot = await _firestore
           .collection('users')
           .doc(_userId!)
-          .collection('daily_logs')
+          .collection('dailyLogs')
           .orderBy('date', descending: true)
           .get();
 
@@ -295,103 +310,46 @@ class CycleProvider with ChangeNotifier {
     }
   }
 
-  // Add or update daily log
-  Future<void> saveDailyLog(DailyLog dailyLog) async {
-    print('🗓️ Saving daily log - User ID: $_userId');
-    print('🗓️ Daily log date: ${dailyLog.date}');
-    print(
-      '🗓️ Daily log data: flow=${dailyLog.flowIntensity}, mood=${dailyLog.mood}, symptoms=${dailyLog.symptoms}',
-    );
+  // Add or update a daily log
+  Future<void> addOrUpdateDailyLog(DailyLog log) async {
+    if (_userId == null) return;
 
-    if (_userId == null) {
-      print('❌ No user ID found for daily log');
-      return;
-    }
-
+    _setLoading(true);
     try {
-      // Check if a log already exists for this date
-      final existingLogIndex = _dailyLogs.indexWhere(
-        (log) => _isSameDate(log.date, dailyLog.date),
-      );
-
-      print('🗓️ Existing log index: $existingLogIndex');
+      final logDate = DateTime(log.date.year, log.date.month, log.date.day);
+      final existingLogIndex = _dailyLogs.indexWhere((l) => l.date == logDate);
 
       if (existingLogIndex != -1) {
         // Update existing log
         final existingLog = _dailyLogs[existingLogIndex];
-        print('🔄 Updating existing log with ID: ${existingLog.id}');
-
-        if (existingLog.id != null) {
-          await _firestore
-              .collection('users')
-              .doc(_userId!)
-              .collection('daily_logs')
-              .doc(existingLog.id)
-              .update({...dailyLog.toMap(), 'updatedAt': Timestamp.now()});
-
-          print('✅ Successfully updated existing daily log');
-
-          // Update local data
-          _dailyLogs[existingLogIndex] = DailyLog(
-            id: existingLog.id,
-            date: dailyLog.date,
-            flowIntensity: dailyLog.flowIntensity,
-            mood: dailyLog.mood,
-            symptoms: dailyLog.symptoms,
-            notes: dailyLog.notes,
-          );
-        }
+        log.id = existingLog.id; // Preserve original ID
+        _dailyLogs[existingLogIndex] = log;
+        await _firestore
+            .collection('users')
+            .doc(_userId)
+            .collection('dailyLogs')
+            .doc(log.id)
+            .update(log.toMap());
       } else {
-        // Create new log
-        print('✨ Creating new daily log');
+        // Add new log
         final docRef = await _firestore
             .collection('users')
-            .doc(_userId!)
-            .collection('daily_logs')
-            .add(dailyLog.toMap());
-
-        print('✅ Successfully created new daily log with ID: ${docRef.id}');
-        dailyLog.id = docRef.id;
-        _dailyLogs.insert(0, dailyLog);
+            .doc(_userId)
+            .collection('dailyLogs')
+            .add(log.toMap());
+        log.id = docRef.id;
+        _dailyLogs.add(log);
       }
 
-      print('🗓️ Total daily logs now: ${_dailyLogs.length}');
-      notifyListeners();
+      _sortAndNotify();
     } catch (e) {
-      print('❌ Error saving daily log: $e');
+      print('Error adding or updating daily log: $e');
+    } finally {
+      _setLoading(false);
     }
   }
 
-  // Get daily log for a specific date
-  DailyLog? getDailyLogForDate(DateTime date) {
-    print('🔍 Looking for daily log for date: $date');
-    print('🔍 Available daily logs: ${_dailyLogs.length}');
-    for (var log in _dailyLogs) {
-      print(
-        '🔍 Log date: ${log.date}, matches: ${_isSameDate(log.date, date)}',
-      );
-    }
-
-    try {
-      final result = _dailyLogs.firstWhere(
-        (log) => _isSameDate(log.date, date),
-      );
-      print('✅ Found daily log: ${result.id}');
-      return result;
-    } catch (e) {
-      print('❌ No daily log found for date: $date');
-      return null;
-    }
-  }
-
-  // Helper method to check if two dates are the same (ignoring time)
-  bool _isSameDate(DateTime date1, DateTime date2) {
-    return date1.year == date2.year &&
-        date1.month == date2.month &&
-        date1.day == date2.day;
-  }
-
-  // Delete daily log
+  // Delete a daily log
   Future<void> deleteDailyLog(String logId) async {
     if (_userId == null) return;
 
@@ -399,7 +357,7 @@ class CycleProvider with ChangeNotifier {
       await _firestore
           .collection('users')
           .doc(_userId!)
-          .collection('daily_logs')
+          .collection('dailyLogs')
           .doc(logId)
           .delete();
 
@@ -408,6 +366,16 @@ class CycleProvider with ChangeNotifier {
     } catch (e) {
       print('Error deleting daily log: $e');
     }
+  }
+
+  void _setLoading(bool loading) {
+    _isLoading = loading;
+    notifyListeners();
+  }
+
+  void _sortAndNotify() {
+    _dailyLogs.sort((a, b) => b.date.compareTo(a.date));
+    notifyListeners();
   }
 
   Future<void> setInitialSetupComplete() async {
@@ -543,6 +511,26 @@ class CycleProvider with ChangeNotifier {
     return progress.clamp(0.0, 1.0);
   }
 
+  /// Predicted next period date
+  DateTime? get nextPeriodDate {
+    final cycle = currentCycle;
+    if (cycle == null) return null;
+
+    return cycle.periodStartDate.add(Duration(days: averageCycleLength));
+  }
+
+  /// Days until next period
+  int get daysUntilNextPeriod {
+    final nextDate = nextPeriodDate;
+    if (nextDate == null) return 0;
+
+    final today = DateTime.now();
+    final difference = nextDate
+        .difference(DateTime(today.year, today.month, today.day))
+        .inDays;
+    return difference > 0 ? difference : 0;
+  }
+
   /// Get the most common flow intensity
   String get mostCommonFlow {
     if (_cycles.isEmpty) return 'Normal';
@@ -588,13 +576,18 @@ class CycleProvider with ChangeNotifier {
   Map<String, int> get moodTrends {
     final thirtyDaysAgo = DateTime.now().subtract(const Duration(days: 30));
     final recentLogs = _dailyLogs.where(
-      (log) => log.date.isAfter(thirtyDaysAgo) && log.mood != null,
+      (log) =>
+          log.date.isAfter(thirtyDaysAgo) &&
+          log.moods != null &&
+          log.moods!.isNotEmpty,
     );
 
     final moodCounts = <String, int>{};
     for (final log in recentLogs) {
-      if (log.mood != null) {
-        moodCounts[log.mood!] = (moodCounts[log.mood!] ?? 0) + 1;
+      if (log.moods != null) {
+        for (final mood in log.moods!) {
+          moodCounts[mood] = (moodCounts[mood] ?? 0) + 1;
+        }
       }
     }
     return moodCounts;
@@ -621,13 +614,18 @@ class CycleProvider with ChangeNotifier {
   Map<String, int> get symptomFrequency {
     final ninetyDaysAgo = DateTime.now().subtract(const Duration(days: 90));
     final recentLogs = _dailyLogs.where(
-      (log) => log.date.isAfter(ninetyDaysAgo) && log.symptoms.isNotEmpty,
+      (log) =>
+          log.date.isAfter(ninetyDaysAgo) &&
+          log.symptoms != null &&
+          log.symptoms!.isNotEmpty,
     );
 
     final symptomCounts = <String, int>{};
     for (final log in recentLogs) {
-      for (final symptom in log.symptoms) {
-        symptomCounts[symptom] = (symptomCounts[symptom] ?? 0) + 1;
+      if (log.symptoms != null) {
+        for (final symptom in log.symptoms!) {
+          symptomCounts[symptom] = (symptomCounts[symptom] ?? 0) + 1;
+        }
       }
     }
     return symptomCounts;

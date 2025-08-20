@@ -1,0 +1,203 @@
+{
+  "@@locale": "en",
+  "appTitle": "Menstrual Health Tracker",
+  "@appTitle": {
+    "description": "The title of the application"
+  },
+  "welcome": "Welcome",
+  "@welcome": {
+    "description": "Welcome message"
+  },
+  "getStarted": "Get Started",
+  "@getStarted": {
+    "description": "Get started button text"
+  },
+  "next": "Next",
+  "@next": {
+    "description": "Next button text"
+  },
+  "skip": "Skip",
+  "@skip": {
+    "description": "Skip button text"
+  },
+  "done": "Done",
+  "@done": {
+    "description": "Done button text"
+  },
+  "home": "Home",
+  "@home": {
+    "description": "Home tab label"
+  },
+  "calendar": "Calendar",
+  "@calendar": {
+    "description": "Calendar tab label"
+  },
+  "insights": "Insights",
+  "@insights": {
+    "description": "Insights tab label"
+  },
+  "settings": "Settings",
+  "@settings": {
+    "description": "Settings tab label"
+  },
+  "cycleOverview": "Cycle Overview",
+  "@cycleOverview": {
+    "description": "Cycle overview section title"
+  },
+  "nextPeriod": "Next Period",
+  "@nextPeriod": {
+    "description": "Next period label"
+  },
+  "daysAway": "days away",
+  "@daysAway": {
+    "description": "Days away text"
+  },
+  "logPeriod": "Log Period",
+  "@logPeriod": {
+    "description": "Log period button text"
+  },
+  "logMood": "Log Mood",
+  "@logMood": {
+    "description": "Log mood button text"
+  },
+  "logSymptoms": "Log Symptoms",
+  "@logSymptoms": {
+    "description": "Log symptoms button text"
+  },
+  "menstrualHealthEducation": "Menstrual Health Education",
+  "@menstrualHealthEducation": {
+    "description": "Education section title"
+  },
+  "videoLibrary": "Video Library",
+  "@videoLibrary": {
+    "description": "Video library title"
+  },
+  "knowledgeQuizzes": "Knowledge Quizzes",
+  "@knowledgeQuizzes": {
+    "description": "Quizzes title"
+  },
+  "productGuide": "Product Guide",
+  "@productGuide": {
+    "description": "Product guide title"
+  },
+  "learnAboutProducts": "Learn about menstrual products and how to use them safely",
+  "@learnAboutProducts": {
+    "description": "Product guide description"
+  },
+  "videosWatched": "Videos Watched",
+  "@videosWatched": {
+    "description": "Videos watched stat"
+  },
+  "watchTime": "Watch Time",
+  "@watchTime": {
+    "description": "Watch time stat"
+  },
+  "completed": "Completed",
+  "@completed": {
+    "description": "Completed text"
+  },
+  "bestScore": "Best Score",
+  "@bestScore": {
+    "description": "Best score text"
+  },
+  "startQuiz": "Start Quiz",
+  "@startQuiz": {
+    "description": "Start quiz button text"
+  },
+  "retakeQuiz": "Retake Quiz",
+  "@retakeQuiz": {
+    "description": "Retake quiz button text"
+  },
+  "watchNow": "Watch Now",
+  "@watchNow": {
+    "description": "Watch now button text"
+  },
+  "watchAgain": "Watch Again",
+  "@watchAgain": {
+    "description": "Watch again button text"
+  },
+  "markWatched": "Mark Watched",
+  "@markWatched": {
+    "description": "Mark watched button text"
+  },
+  "videoMarkedWatched": "Video marked as watched! 🎉",
+  "@videoMarkedWatched": {
+    "description": "Video marked as watched message"
+  },
+  "quizComplete": "Quiz Complete!",
+  "@quizComplete": {
+    "description": "Quiz complete message"
+  },
+  "yourScore": "Your Score",
+  "@yourScore": {
+    "description": "Your score text"
+  },
+  "excellentWork": "Excellent work! 🎉",
+  "@excellentWork": {
+    "description": "Excellent work message"
+  },
+  "goodJob": "Good job! Keep learning! 📚",
+  "@goodJob": {
+    "description": "Good job message"
+  },
+  "keepPracticing": "Keep practicing! You'll do better next time! 💪",
+  "@keepPracticing": {
+    "description": "Keep practicing message"
+  },
+  "continueButton": "Continue",
+  "@continueButton": {
+    "description": "Continue button text"
+  },
+  "close": "Close",
+  "@close": {
+    "description": "Close button text"
+  },
+  "previous": "Previous",
+  "@previous": {
+    "description": "Previous button text"
+  },
+  "finishQuiz": "Finish Quiz",
+  "@finishQuiz": {
+    "description": "Finish quiz button text"
+  },
+  "questions": "questions",
+  "@questions": {
+    "description": "Questions text"
+  },
+  "estimatedTime": "Estimated time",
+  "@estimatedTime": {
+    "description": "Estimated time text"
+  },
+  "beginner": "Beginner",
+  "@beginner": {
+    "description": "Beginner difficulty level"
+  },
+  "intermediate": "Intermediate",
+  "@intermediate": {
+    "description": "Intermediate difficulty level"
+  },
+  "advanced": "Advanced",
+  "@advanced": {
+    "description": "Advanced difficulty level"
+  },
+  "tamponInstructions": "How to Use Tampons Safely",
+  "@tamponInstructions": {
+    "description": "Tampon instructions title"
+  },
+  "safetyTips": "Safety Tips",
+  "@safetyTips": {
+    "description": "Safety tips section title"
+  },
+  "language": "Language",
+  "@language": {
+    "description": "Language setting label"
+  },
+  "english": "English",
+  "@english": {
+    "description": "English language option"
+  },
+  "shona": "Shona",
+  "@shona": {
+    "description": "Shona language option"
+  }
+}

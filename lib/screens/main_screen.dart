@@ -15,7 +15,7 @@ class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
 
   final List<Widget> _screens = [
-    const HomeScreenContent(),
+    const HomeScreen(),
     const CalendarScreen(),
     const InsightsScreen(),
     const SettingsScreen(),
@@ -64,8 +64,8 @@ class _MainScreenState extends State<MainScreen> {
                 label: 'Insights',
               ),
               BottomNavigationBarItem(
-                icon: Icon(Icons.person),
-                label: 'Profile',
+                icon: Icon(Icons.settings),
+                label: 'Settings',
               ),
             ],
           ),

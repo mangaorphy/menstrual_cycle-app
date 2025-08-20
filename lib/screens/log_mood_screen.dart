@@ -14,66 +14,23 @@ class LogMoodScreen extends StatefulWidget {
 
 class _LogMoodScreenState extends State<LogMoodScreen> {
   late DateTime _selectedDate;
-  String? _selectedMood;
+  final List<String> _selectedMoods = [];
   final TextEditingController _notesController = TextEditingController();
+  bool _isLoading = false;
 
   final List<Map<String, dynamic>> _moodOptions = [
-    {
-      'value': 'Happy',
-      'title': 'Happy',
-      'emoji': '😊',
-      'color': Colors.yellow.shade600,
-      'description': 'Feeling joyful and positive',
-    },
-    {
-      'value': 'Calm',
-      'title': 'Calm',
-      'emoji': '😌',
-      'color': Colors.green.shade400,
-      'description': 'Peaceful and relaxed',
-    },
-    {
-      'value': 'Energetic',
-      'title': 'Energetic',
-      'emoji': '🤗',
-      'color': Colors.orange.shade500,
-      'description': 'Full of energy and motivation',
-    },
-    {
-      'value': 'Neutral',
-      'title': 'Neutral',
-      'emoji': '😐',
-      'color': Colors.grey.shade500,
-      'description': 'Feeling balanced, neither up nor down',
-    },
-    {
-      'value': 'Tired',
-      'title': 'Tired',
-      'emoji': '😴',
-      'color': Colors.blue.shade400,
-      'description': 'Low energy, need rest',
-    },
-    {
-      'value': 'Stressed',
-      'title': 'Stressed',
-      'emoji': '😰',
-      'color': Colors.red.shade400,
-      'description': 'Feeling overwhelmed or anxious',
-    },
-    {
-      'value': 'Sad',
-      'title': 'Sad',
-      'emoji': '😢',
-      'color': Colors.blue.shade600,
-      'description': 'Feeling down or emotional',
-    },
-    {
-      'value': 'Irritated',
-      'title': 'Irritated',
-      'emoji': '😤',
-      'color': Colors.red.shade500,
-      'description': 'Feeling annoyed or frustrated',
-    },
+    {'value': 'Happy', 'emoji': '😊'},
+    {'value': 'Calm', 'emoji': '😌'},
+    {'value': 'Energetic', 'emoji': '⚡️'},
+    {'value': 'Neutral', 'emoji': '😐'},
+    {'value': 'Tired', 'emoji': '😴'},
+    {'value': 'Stressed', 'emoji': '😰'},
+    {'value': 'Sad', 'emoji': '😢'},
+    {'value': 'Irritated', 'emoji': '😤'},
+    {'value': 'Anxious', 'emoji': '😟'},
+    {'value': 'Motivated', 'emoji': '💪'},
+    {'value': 'Relaxed', 'emoji': '🧘‍♀️'},
+    {'value': 'Content', 'emoji': '🙂'},
   ];
 
   @override
@@ -88,7 +45,9 @@ class _LogMoodScreenState extends State<LogMoodScreen> {
     final existingLog = cycleProvider.getDailyLogForDate(_selectedDate);
 
     if (existingLog != null) {
-      _selectedMood = existingLog.mood;
+      if (existingLog.moods != null) {
+        _selectedMoods.addAll(existingLog.moods!);
+      }
       _notesController.text = existingLog.notes ?? '';
     }
   }
@@ -106,292 +65,207 @@ class _LogMoodScreenState extends State<LogMoodScreen> {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('Log Mood'),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        actions: [
-          TextButton(
-            onPressed: _saveMood,
-            child: Text(
-              'Save',
-              style: TextStyle(
-                color: theme.colorScheme.primary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+        title: Text(
+          'Log Mood',
+          style: TextStyle(
+            color: theme.colorScheme.onSurface,
+            fontWeight: FontWeight.bold,
           ),
-        ],
+        ),
+        iconTheme: IconThemeData(color: theme.colorScheme.onSurface),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Date selector
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: theme.cardColor,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: theme.shadowColor.withValues(alpha: 0.1),
-                    blurRadius: 10,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Date',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  GestureDetector(
-                    onTap: _selectDate,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 12,
-                        horizontal: 16,
-                      ),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: theme.dividerColor),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
-                            style: theme.textTheme.bodyLarge,
-                          ),
-                          Icon(
-                            Icons.calendar_today,
-                            color: theme.colorScheme.primary,
-                            size: 20,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // Mood selection
+            _buildSectionTitle('How are you feeling today?'),
+            const SizedBox(height: 4),
             Text(
-              'How are you feeling today?',
-              style: theme.textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.w600,
+              'You can select multiple moods.',
+              style: TextStyle(
+                color: theme.colorScheme.onSurface.withOpacity(0.6),
+                fontSize: 12,
               ),
             ),
             const SizedBox(height: 16),
-
-            GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                childAspectRatio:
-                    0.9, // Reduced to give more height for content
-              ),
-              itemCount: _moodOptions.length,
-              itemBuilder: (context, index) {
-                return _buildMoodOption(_moodOptions[index]);
-              },
-            ),
-
+            _buildMoodGrid(),
             const SizedBox(height: 24),
-
-            // Notes section
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: theme.cardColor,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: theme.shadowColor.withValues(alpha: 0.1),
-                    blurRadius: 10,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Notes (Optional)',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: _notesController,
-                    maxLines: 4,
-                    decoration: InputDecoration(
-                      hintText: 'What influenced your mood today?',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: theme.dividerColor),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: theme.dividerColor),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(
-                          color: theme.colorScheme.primary,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            _buildSectionTitle('Notes (Optional)'),
+            const SizedBox(height: 12),
+            _buildNotesField(),
+            const SizedBox(height: 40),
+            _buildSaveButton(),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildMoodOption(Map<String, dynamic> option) {
+  Widget _buildSectionTitle(String title) {
     final theme = Theme.of(context);
-    final isSelected = _selectedMood == option['value'];
-
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _selectedMood = option['value'];
-        });
-      },
-      child: Container(
-        padding: const EdgeInsets.all(12), // Reduced padding
-        decoration: BoxDecoration(
-          color: isSelected
-              ? option['color'].withValues(alpha: 0.2)
-              : theme.cardColor,
-          borderRadius: BorderRadius.circular(16),
-          border: isSelected
-              ? Border.all(color: option['color'], width: 2)
-              : Border.all(color: theme.dividerColor),
-          boxShadow: [
-            BoxShadow(
-              color: theme.shadowColor.withValues(alpha: 0.1),
-              blurRadius: 10,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min, // Added to prevent overflow
-          children: [
-            Text(
-              option['emoji'],
-              style: const TextStyle(fontSize: 28),
-            ), // Slightly smaller emoji
-            const SizedBox(height: 6), // Reduced spacing
-            Flexible(
-              // Wrap title in Flexible
-              child: Text(
-                option['title'],
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14, // Slightly smaller font
-                  color: isSelected
-                      ? option['color']
-                      : theme.colorScheme.onSurface,
-                ),
-                overflow: TextOverflow.ellipsis,
-                maxLines: 1,
-              ),
-            ),
-            const SizedBox(height: 2), // Reduced spacing
-            Flexible(
-              // Wrap description in Flexible
-              child: Text(
-                option['description'],
-                textAlign: TextAlign.center,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  fontSize: 10, // Smaller font for description
-                  color: isSelected
-                      ? option['color'].withValues(alpha: 0.8)
-                      : theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                ),
-                overflow: TextOverflow.ellipsis,
-                maxLines: 2, // Allow up to 2 lines
-              ),
-            ),
-          ],
-        ),
+    return Text(
+      title,
+      style: TextStyle(
+        fontSize: 18,
+        fontWeight: FontWeight.bold,
+        color: theme.colorScheme.onSurface,
       ),
     );
   }
 
-  Future<void> _selectDate() async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: _selectedDate,
-      firstDate: DateTime.now().subtract(const Duration(days: 365)),
-      lastDate: DateTime.now().add(const Duration(days: 30)),
+  Widget _buildMoodGrid() {
+    final theme = Theme.of(context);
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 4,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+        childAspectRatio: 1.0,
+      ),
+      itemCount: _moodOptions.length,
+      itemBuilder: (context, index) {
+        final mood = _moodOptions[index];
+        final isSelected = _selectedMoods.contains(mood['value']);
+
+        return GestureDetector(
+          onTap: () {
+            setState(() {
+              if (isSelected) {
+                _selectedMoods.remove(mood['value']);
+              } else {
+                _selectedMoods.add(mood['value']!);
+              }
+            });
+          },
+          child: Container(
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? theme.colorScheme.primary.withOpacity(0.1)
+                  : theme.cardColor,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isSelected
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.outline.withOpacity(0.3),
+                width: isSelected ? 2 : 1,
+              ),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(mood['emoji']!, style: const TextStyle(fontSize: 28)),
+                const SizedBox(height: 8),
+                Text(
+                  mood['value']!,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    color: theme.colorScheme.onSurface,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
-    if (picked != null && picked != _selectedDate) {
-      setState(() {
-        _selectedDate = picked;
-      });
-      _loadExistingData(); // Reload data for the new date
-    }
+  }
+
+  Widget _buildNotesField() {
+    final theme = Theme.of(context);
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.cardColor,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: theme.colorScheme.outline.withOpacity(0.3)),
+      ),
+      child: TextField(
+        controller: _notesController,
+        maxLines: 4,
+        decoration: InputDecoration(
+          hintText: 'Add any additional notes...',
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.all(16),
+          hintStyle: TextStyle(
+            color: theme.colorScheme.onSurface.withOpacity(0.5),
+          ),
+        ),
+        style: TextStyle(color: theme.colorScheme.onSurface),
+      ),
+    );
+  }
+
+  Widget _buildSaveButton() {
+    final theme = Theme.of(context);
+    return SizedBox(
+      width: double.infinity,
+      height: 56,
+      child: ElevatedButton(
+        onPressed: _isLoading ? null : _saveMood,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: theme.colorScheme.primary,
+          foregroundColor: theme.colorScheme.onPrimary,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
+        child: _isLoading
+            ? SizedBox(
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    theme.colorScheme.onPrimary,
+                  ),
+                ),
+              )
+            : const Text(
+                'Save Log',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+      ),
+    );
   }
 
   Future<void> _saveMood() async {
-    if (_selectedMood == null) {
+    if (_selectedMoods.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please select a mood'),
+          content: Text('Please select at least one mood.'),
           backgroundColor: Colors.red,
         ),
       );
       return;
     }
 
-    final cycleProvider = Provider.of<CycleProvider>(context, listen: false);
-
-    // Get existing log or create new one
-    DailyLog dailyLog =
-        cycleProvider.getDailyLogForDate(_selectedDate) ??
-        DailyLog(date: _selectedDate);
-
-    // Update mood data
-    dailyLog = DailyLog(
-      id: dailyLog.id,
-      date: _selectedDate,
-      flowIntensity: dailyLog.flowIntensity,
-      mood: _selectedMood,
-      symptoms: dailyLog.symptoms,
-      notes: _notesController.text.trim().isEmpty
-          ? null
-          : _notesController.text.trim(),
-    );
+    setState(() => _isLoading = true);
 
     try {
-      await cycleProvider.saveDailyLog(dailyLog);
+      final cycleProvider = Provider.of<CycleProvider>(context, listen: false);
+      final existingLog = cycleProvider.getDailyLogForDate(_selectedDate);
+
+      final newLog = DailyLog(
+        id: existingLog?.id ?? DateTime.now().toIso8601String(),
+        date: _selectedDate,
+        moods: _selectedMoods,
+        flowIntensity: existingLog?.flowIntensity,
+        symptoms: existingLog?.symptoms ?? [],
+        notes: _notesController.text.isEmpty ? null : _notesController.text,
+      );
+
+      await cycleProvider.addOrUpdateDailyLog(newLog);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Mood logged successfully!'),
+            content: Text('Mood log saved successfully!'),
             backgroundColor: Colors.green,
           ),
         );
@@ -401,10 +275,14 @@ class _LogMoodScreenState extends State<LogMoodScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error saving mood: $e'),
+            content: Text('Error saving mood log: $e'),
             backgroundColor: Colors.red,
           ),
         );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
       }
     }
   }

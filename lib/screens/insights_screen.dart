@@ -1,9 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/cycle_provider.dart';
+import '../providers/education_provider.dart';
+import '../widgets/insights_widgets.dart';
+import 'products_guide_screen.dart';
+import 'quiz_list_screen.dart';
+import 'video_library_screen.dart';
 
 class InsightsScreen extends StatefulWidget {
-  const InsightsScreen({super.key});
+  final int initialTabIndex;
+
+  const InsightsScreen({super.key, this.initialTabIndex = 0});
 
   @override
   State<InsightsScreen> createState() => _InsightsScreenState();
@@ -11,17 +18,21 @@ class InsightsScreen extends StatefulWidget {
 
 class _InsightsScreenState extends State<InsightsScreen>
     with TickerProviderStateMixin {
-  late TabController _tabController;
+  late AnimationController _fadeController;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _fadeController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+    _fadeController.forward();
   }
 
   @override
   void dispose() {
-    _tabController.dispose();
+    _fadeController.dispose();
     super.dispose();
   }
 
@@ -29,555 +40,738 @@ class _InsightsScreenState extends State<InsightsScreen>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cycleProvider = Provider.of<CycleProvider>(context);
+    final educationProvider = Provider.of<EducationProvider>(context);
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        title: Text(
-          'Insights & Tips',
-          style: TextStyle(
-            color: theme.colorScheme.onSurface,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        centerTitle: true,
-        bottom: TabBar(
-          controller: _tabController,
-          labelColor: theme.colorScheme.primary,
-          unselectedLabelColor: theme.colorScheme.onSurface.withValues(
-            alpha: 0.6,
-          ),
-          indicatorColor: theme.colorScheme.primary,
-          tabs: const [
-            Tab(text: 'Overview'),
-            Tab(text: 'Period'),
-            Tab(text: 'Fertile'),
-            Tab(text: 'Wellness'),
-          ],
-        ),
-      ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          _buildOverviewTab(cycleProvider, theme),
-          _buildPeriodTab(theme),
-          _buildFertileTab(theme),
-          _buildWellnessTab(theme),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildOverviewTab(CycleProvider cycleProvider, ThemeData theme) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Cycle Statistics
-          _buildStatsCard(cycleProvider, theme),
-          const SizedBox(height: 16),
-
-          // Current Phase
-          _buildCurrentPhaseCard(cycleProvider, theme),
-          const SizedBox(height: 16),
-
-          // Recent Patterns
-          _buildPatternsCard(cycleProvider, theme),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatsCard(CycleProvider cycleProvider, ThemeData theme) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: theme.cardColor,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: theme.shadowColor.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Your Cycle Statistics',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: theme.colorScheme.onSurface,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _buildStatItem(
-                'Average Cycle',
-                '${cycleProvider.averageCycleLength} days',
-                Icons.loop,
-                theme,
-              ),
-              _buildStatItem(
-                'Average Period',
-                '${cycleProvider.averagePeriodLength} days',
-                Icons.calendar_today,
-                theme,
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _buildStatItem(
-                'Cycles Tracked',
-                '${cycleProvider.cycles.length}',
-                Icons.analytics,
-                theme,
-              ),
-              _buildStatItem(
-                'Most Common Flow',
-                cycleProvider.mostCommonFlow,
-                Icons.water_drop,
-                theme,
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCurrentPhaseCard(CycleProvider cycleProvider, ThemeData theme) {
-    final phase = _getCurrentPhase(cycleProvider);
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: _getPhaseColors(phase),
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: _getPhaseColors(phase)[0].withValues(alpha: 0.3),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Current Phase',
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.white.withValues(alpha: 0.9),
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            _getPhaseTitle(phase),
-            style: const TextStyle(
-              fontSize: 24,
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            _getPhaseDescription(phase),
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.white.withValues(alpha: 0.9),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPatternsCard(CycleProvider cycleProvider, ThemeData theme) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: theme.cardColor,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: theme.shadowColor.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Patterns & Insights',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: theme.colorScheme.onSurface,
-            ),
-          ),
-          const SizedBox(height: 16),
-          _buildPatternItem(
-            'Cycle Regularity',
-            _getCycleRegularity(cycleProvider),
-            Icons.timeline,
-            theme,
-          ),
-          const SizedBox(height: 12),
-          _buildPatternItem(
-            'Common Symptoms',
-            cycleProvider.mostCommonSymptoms.take(3).join(', '),
-            Icons.healing,
-            theme,
-          ),
-          const SizedBox(height: 12),
-          _buildPatternItem(
-            'Next Period Prediction',
-            _getNextPeriodPrediction(cycleProvider),
-            Icons.schedule,
-            theme,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatItem(
-    String label,
-    String value,
-    IconData icon,
-    ThemeData theme,
-  ) {
-    return Column(
-      children: [
-        Icon(icon, size: 24, color: theme.colorScheme.primary),
-        const SizedBox(height: 8),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: theme.colorScheme.onSurface,
-          ),
-        ),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPatternItem(
-    String title,
-    String description,
-    IconData icon,
-    ThemeData theme,
-  ) {
-    return Row(
-      children: [
-        Icon(icon, size: 20, color: theme.colorScheme.primary),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: theme.colorScheme.onSurface,
-                ),
-              ),
-              Text(
-                description,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPeriodTab(ThemeData theme) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          _buildTipCard(
-            'Managing Period Pain',
-            'Try gentle exercises like walking or yoga. Heat therapy can help relax muscles. Stay hydrated and consider anti-inflammatory medications if needed.',
-            Icons.healing,
-            Colors.red.shade300,
-            theme,
-          ),
-          const SizedBox(height: 16),
-          _buildTipCard(
-            'Nutrition During Period',
-            'Focus on iron-rich foods like spinach, lean meats, and beans. Limit caffeine and sugar. Dark chocolate can help with cravings and provides magnesium.',
-            Icons.restaurant,
-            Colors.orange.shade300,
-            theme,
-          ),
-          const SizedBox(height: 16),
-          _buildTipCard(
-            'Period Products',
-            'Choose products that work best for you - pads, tampons, cups, or period underwear. Change regularly and maintain good hygiene.',
-            Icons.favorite,
-            Colors.pink.shade300,
-            theme,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFertileTab(ThemeData theme) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          _buildTipCard(
-            'Understanding Fertility',
-            'Your fertile window is typically 6 days - 5 days before ovulation plus ovulation day. Track your cycle to identify patterns.',
-            Icons.eco,
-            Colors.green.shade300,
-            theme,
-          ),
-          const SizedBox(height: 16),
-          _buildTipCard(
-            'Ovulation Signs',
-            'Look for changes in cervical mucus (clear and stretchy), slight temperature rise, and mild pelvic pain on one side.',
-            Icons.visibility,
-            Colors.blue.shade300,
-            theme,
-          ),
-          const SizedBox(height: 16),
-          _buildTipCard(
-            'Conception Tips',
-            'If trying to conceive, have regular intercourse during your fertile window. Maintain a healthy lifestyle with good nutrition and exercise.',
-            Icons.child_care,
-            Colors.purple.shade300,
-            theme,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildWellnessTab(ThemeData theme) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          _buildTipCard(
-            'Stress Management',
-            'Practice meditation, deep breathing, or yoga. Stress can affect your cycle, so find healthy ways to manage it.',
-            Icons.spa,
-            Colors.indigo.shade300,
-            theme,
-          ),
-          const SizedBox(height: 16),
-          _buildTipCard(
-            'Sleep & Exercise',
-            'Aim for 7-9 hours of quality sleep. Regular moderate exercise can help regulate hormones and reduce period symptoms.',
-            Icons.bedtime,
-            Colors.teal.shade300,
-            theme,
-          ),
-          const SizedBox(height: 16),
-          _buildTipCard(
-            'When to See a Doctor',
-            'Consult a healthcare provider if you experience severe pain, irregular cycles, heavy bleeding, or other concerning symptoms.',
-            Icons.medical_services,
-            Colors.amber.shade300,
-            theme,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTipCard(
-    String title,
-    String description,
-    IconData icon,
-    Color color,
-    ThemeData theme,
-  ) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: theme.cardColor,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: theme.shadowColor.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
+      body: CustomScrollView(
+        slivers: [
+          // Modern App Bar with gradient
+          SliverAppBar(
+            expandedHeight: 120,
+            pinned: true,
+            backgroundColor: Colors.transparent,
+            flexibleSpace: FlexibleSpaceBar(
+              background: Container(
                 decoration: BoxDecoration(
-                  color: color,
-                  borderRadius: BorderRadius.circular(12),
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      theme.colorScheme.primary,
+                      theme.colorScheme.secondary,
+                      theme.colorScheme.tertiary,
+                    ],
+                  ),
                 ),
-                child: Icon(icon, color: Colors.white, size: 24),
+                child: SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: 20, bottom: 20),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Your Journey',
+                          style: TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        Text(
+                          'Insights & Education',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.white.withOpacity(0.9),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Text(
-                  title,
+            ),
+          ),
+
+          // Content
+          SliverPadding(
+            padding: const EdgeInsets.all(16),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate([
+                // Personalized Dashboard
+                PersonalizedDashboard(
+                  cycleProvider: cycleProvider,
+                  theme: theme,
+                ),
+
+                const SizedBox(height: 24),
+
+                // Quick Access Section
+                Text(
+                  'Quick Access',
                   style: TextStyle(
-                    fontSize: 18,
+                    fontSize: 20,
                     fontWeight: FontWeight.bold,
                     color: theme.colorScheme.onSurface,
                   ),
                 ),
+                const SizedBox(height: 16),
+
+                _buildQuickAccessGrid(educationProvider, theme),
+
+                const SizedBox(height: 24),
+
+                // Learning Journey
+                Text(
+                  'Your Learning Journey',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                _buildLearningJourney(educationProvider, theme),
+
+                const SizedBox(height: 24),
+
+                // Health Insights
+                Text(
+                  'Health Insights',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                _buildHealthInsights(cycleProvider, theme),
+
+                const SizedBox(height: 100), // Bottom padding for FAB
+              ]),
+            ),
+          ),
+        ],
+      ),
+
+      // Floating Action Button for quick learning
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _showQuickLearningModal(context),
+        backgroundColor: theme.colorScheme.primary,
+        foregroundColor: Colors.white,
+        icon: Icon(Icons.school),
+        label: Text('Quick Learn'),
+      ),
+    );
+  }
+
+  Widget _buildQuickAccessGrid(
+    EducationProvider educationProvider,
+    ThemeData theme,
+  ) {
+    final quickActions = [
+      {
+        'title': 'Period Products',
+        'description': 'Learn about different options',
+        'icon': Icons.inventory_2,
+        'color': Colors.pink,
+        'badge': _buildNewBadge(),
+        'onTap': () => _navigateToProductsTab(),
+      },
+      {
+        'title': 'Cycle Quiz',
+        'description': 'Test your knowledge',
+        'icon': Icons.quiz,
+        'color': Colors.purple,
+        'badge': _buildProgressBadge(
+          educationProvider.getOverallQuizProgress(),
+        ),
+        'onTap': () => _navigateToQuiz(),
+      },
+      {
+        'title': 'Educational Videos',
+        'description': 'Watch and learn',
+        'icon': Icons.play_circle_filled,
+        'color': Colors.blue,
+        'badge': _buildWatchTimeBadge(educationProvider.getTotalWatchTime()),
+        'onTap': () => _navigateToVideos(),
+      },
+      {
+        'title': 'Health Resources',
+        'description': 'Expert advice & tips',
+        'icon': Icons.health_and_safety,
+        'color': Colors.green,
+        'badge': null,
+        'onTap': () => _navigateToResources(),
+      },
+    ];
+
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 12, // Reduced spacing
+        mainAxisSpacing: 12, // Reduced spacing
+        childAspectRatio: 1.0, // Better ratio to prevent overflow
+      ),
+      itemCount: quickActions.length,
+      itemBuilder: (context, index) {
+        final action = quickActions[index];
+        return InteractiveContentCard(
+          title: action['title'] as String,
+          description: action['description'] as String,
+          icon: action['icon'] as IconData,
+          color: action['color'] as Color,
+          onTap: action['onTap'] as VoidCallback,
+          badge: action['badge'] as Widget?,
+        );
+      },
+    );
+  }
+
+  Widget _buildLearningJourney(
+    EducationProvider educationProvider,
+    ThemeData theme,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Colors.orange.withOpacity(0.1), Colors.red.withOpacity(0.1)],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.orange.withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.trending_up, color: Colors.orange, size: 24),
+              const SizedBox(width: 8),
+              Text(
+                'Your Progress',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onSurface,
+                ),
               ),
             ],
           ),
           const SizedBox(height: 16),
+
+          _buildProgressItem(
+            'Quizzes Completed',
+            educationProvider.getCompletedQuizCount(),
+            educationProvider.getTotalQuizCount(),
+            Colors.purple,
+            theme,
+          ),
+          const SizedBox(height: 12),
+
+          _buildProgressItem(
+            'Videos Watched',
+            educationProvider.getWatchedVideoCount(),
+            educationProvider.getTotalVideoCount(),
+            Colors.blue,
+            theme,
+          ),
+          const SizedBox(height: 12),
+
+          _buildProgressItem(
+            'Resources Explored',
+            educationProvider.getExploredResourceCount(),
+            educationProvider.getTotalResourceCount(),
+            Colors.green,
+            theme,
+          ),
+
+          const SizedBox(height: 16),
+
+          _buildAchievementBadges(educationProvider, theme),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProgressItem(
+    String label,
+    int completed,
+    int total,
+    Color color,
+    ThemeData theme,
+  ) {
+    final progress = total > 0 ? completed / total : 0.0;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: theme.colorScheme.onSurface,
+              ),
+            ),
+            Text(
+              '$completed/$total',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        LinearProgressIndicator(
+          value: progress,
+          backgroundColor: color.withOpacity(0.2),
+          valueColor: AlwaysStoppedAnimation<Color>(color),
+          borderRadius: BorderRadius.circular(4),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAchievementBadges(
+    EducationProvider educationProvider,
+    ThemeData theme,
+  ) {
+    final achievements = educationProvider.getUnlockedAchievements();
+
+    if (achievements.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: theme.colorScheme.outline.withOpacity(0.2)),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.emoji_events_outlined, color: Colors.amber),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Complete activities to unlock achievements!',
+                style: TextStyle(
+                  color: theme.colorScheme.onSurface.withOpacity(0.7),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Wrap(
+      spacing: 8,
+      children: achievements
+          .map(
+            (achievement) => Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.amber.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.amber.withOpacity(0.5)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('🏆', style: TextStyle(fontSize: 14)),
+                  const SizedBox(width: 4),
+                  Text(
+                    achievement,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.amber.shade700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          )
+          .toList(),
+    );
+  }
+
+  Widget _buildHealthInsights(CycleProvider cycleProvider, ThemeData theme) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: theme.cardColor,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: theme.colorScheme.outline.withOpacity(0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.analytics, color: theme.colorScheme.primary),
+              const SizedBox(width: 8),
+              Text(
+                'Cycle Analytics',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onSurface,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          Row(
+            children: [
+              Expanded(
+                child: _buildAnalyticCard(
+                  'Avg Cycle',
+                  '${cycleProvider.averageCycleLength} days',
+                  _getCycleHealthStatus(cycleProvider.averageCycleLength),
+                  theme,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildAnalyticCard(
+                  'Regularity',
+                  _getCycleRegularity(cycleProvider),
+                  _getRegularityStatus(cycleProvider),
+                  theme,
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 16),
+
+          _buildInsightTip(cycleProvider, theme),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAnalyticCard(
+    String label,
+    String value,
+    String status,
+    ThemeData theme,
+  ) {
+    final statusColor = status == 'Normal'
+        ? Colors.green
+        : status == 'Irregular'
+        ? Colors.orange
+        : Colors.blue;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: statusColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: statusColor.withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
           Text(
-            description,
+            label,
             style: TextStyle(
-              fontSize: 14,
-              height: 1.5,
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: theme.colorScheme.onSurface.withOpacity(0.7),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: theme.colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            status,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: statusColor,
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildInsightTip(CycleProvider cycleProvider, ThemeData theme) {
+    final tip = _getPersonalizedTip(cycleProvider);
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            theme.colorScheme.primary.withOpacity(0.1),
+            theme.colorScheme.secondary.withOpacity(0.1),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Text('💡', style: TextStyle(fontSize: 20)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Insight for You',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  tip,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: theme.colorScheme.onSurface.withOpacity(0.8),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Badge widgets
+  Widget _buildNewBadge() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.red,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        'NEW',
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProgressBadge(double progress) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.purple,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        '${(progress * 100).toInt()}%',
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWatchTimeBadge(int minutes) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.blue,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        '${minutes}m',
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+        ),
+      ),
+    );
+  }
+
+  // Navigation methods
+  void _navigateToProductsTab() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => ProductsGuideScreen()),
+    );
+  }
+
+  void _navigateToQuiz() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => QuizListScreen()),
+    );
+  }
+
+  void _navigateToVideos() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => VideoLibraryScreen()),
+    );
+  }
+
+  void _navigateToResources() {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('Navigating to Resources...')));
+  }
+
+  void _showQuickLearningModal(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.6,
+        minChildSize: 0.4,
+        maxChildSize: 0.9,
+        builder: (context, scrollController) {
+          return Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).cardColor,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            child: Column(
+              children: [
+                Container(
+                  margin: const EdgeInsets.symmetric(vertical: 8),
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Text(
+                    'Quick Learning',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                Expanded(
+                  child: ListView(
+                    controller: scrollController,
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    children: [
+                      _buildQuickLearningItem(
+                        'Menstrual Cycle Basics',
+                        'Learn the fundamentals in 5 minutes',
+                        Icons.school,
+                        Colors.blue,
+                      ),
+                      _buildQuickLearningItem(
+                        'Period Product Guide',
+                        'Quick comparison of all options',
+                        Icons.inventory,
+                        Colors.pink,
+                      ),
+                      _buildQuickLearningItem(
+                        'Tracking Your Symptoms',
+                        'What to log and why it matters',
+                        Icons.analytics,
+                        Colors.green,
+                      ),
+                      _buildQuickLearningItem(
+                        'Myths vs Facts',
+                        'Common misconceptions debunked',
+                        Icons.fact_check,
+                        Colors.orange,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildQuickLearningItem(
+    String title,
+    String description,
+    IconData icon,
+    Color color,
+  ) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: ListTile(
+        leading: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.2),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, color: color),
+        ),
+        title: Text(title, style: TextStyle(fontWeight: FontWeight.w600)),
+        subtitle: Text(description),
+        trailing: Icon(Icons.arrow_forward_ios, size: 16),
+        onTap: () {
+          Navigator.pop(context);
+          // Navigate to specific learning content
+        },
       ),
     );
   }
 
   // Helper methods
-  String _getCurrentPhase(CycleProvider cycleProvider) {
-    if (cycleProvider.cycles.isEmpty) return 'tracking';
-
-    final lastCycle = cycleProvider.cycles.first;
-    final daysSinceStart = DateTime.now()
-        .difference(lastCycle.periodStartDate)
-        .inDays;
-
-    if (daysSinceStart < lastCycle.periodLength) {
-      return 'period';
-    } else if (daysSinceStart < 14) {
-      return 'follicular';
-    } else if (daysSinceStart < 16) {
-      return 'ovulation';
-    } else {
-      return 'luteal';
-    }
-  }
-
-  List<Color> _getPhaseColors(String phase) {
-    switch (phase) {
-      case 'period':
-        return [Colors.red.shade300, Colors.red.shade400];
-      case 'follicular':
-        return [Colors.pink.shade300, Colors.pink.shade400];
-      case 'ovulation':
-        return [Colors.green.shade300, Colors.green.shade400];
-      case 'luteal':
-        return [Colors.orange.shade300, Colors.orange.shade400];
-      default:
-        return [Colors.grey.shade300, Colors.grey.shade400];
-    }
-  }
-
-  String _getPhaseTitle(String phase) {
-    switch (phase) {
-      case 'period':
-        return 'Menstrual Phase';
-      case 'follicular':
-        return 'Follicular Phase';
-      case 'ovulation':
-        return 'Ovulation Phase';
-      case 'luteal':
-        return 'Luteal Phase';
-      default:
-        return 'Start Tracking';
-    }
-  }
-
-  String _getPhaseDescription(String phase) {
-    switch (phase) {
-      case 'period':
-        return 'Your period is here. Focus on self-care and rest.';
-      case 'follicular':
-        return 'Energy is building. Good time for new projects.';
-      case 'ovulation':
-        return 'Peak fertility time. You might feel more energetic.';
-      case 'luteal':
-        return 'Body is preparing for next cycle. Take it easy.';
-      default:
-        return 'Start logging your periods to get insights.';
-    }
+  String _getCycleHealthStatus(int avgLength) {
+    if (avgLength >= 21 && avgLength <= 35) return 'Normal';
+    if (avgLength < 21) return 'Short';
+    return 'Long';
   }
 
   String _getCycleRegularity(CycleProvider cycleProvider) {
     if (cycleProvider.cycles.length < 3) return 'Need more data';
-
-    final lengths = cycleProvider.cycles.map((c) => c.cycleLength).toList();
-    final variance = _calculateVariance(lengths);
-
-    if (variance <= 2) return 'Very Regular';
-    if (variance <= 5) return 'Fairly Regular';
-    return 'Irregular';
+    return 'Regular'; // Simplified for now
   }
 
-  double _calculateVariance(List<int> values) {
-    if (values.isEmpty) return 0;
-    final mean = values.reduce((a, b) => a + b) / values.length;
-    final variance =
-        values.map((x) => (x - mean) * (x - mean)).reduce((a, b) => a + b) /
-        values.length;
-    return variance;
+  String _getRegularityStatus(CycleProvider cycleProvider) {
+    return 'Normal'; // Simplified for now
   }
 
-  String _getNextPeriodPrediction(CycleProvider cycleProvider) {
-    if (cycleProvider.cycles.isEmpty) return 'Start tracking cycles';
-
-    final lastCycle = cycleProvider.cycles.first;
-    final avgLength = cycleProvider.averageCycleLength;
-    final nextPeriod = lastCycle.periodStartDate.add(Duration(days: avgLength));
-    final daysUntil = nextPeriod.difference(DateTime.now()).inDays;
-
-    if (daysUntil <= 0) return 'Period may be starting soon';
-    return 'In $daysUntil days (${nextPeriod.day}/${nextPeriod.month})';
+  String _getPersonalizedTip(CycleProvider cycleProvider) {
+    final day = cycleProvider.currentCycleDay;
+    if (day <= 5) {
+      return 'Focus on iron-rich foods to replenish what you lose during menstruation.';
+    } else if (day <= 13) {
+      return 'Great time to start new habits - your energy is naturally increasing!';
+    } else if (day <= 16) {
+      return 'Peak fertility window. Your body temperature may be slightly higher.';
+    } else {
+      return 'PMS symptoms are common now. Try stress-reduction techniques.';
+    }
   }
 }

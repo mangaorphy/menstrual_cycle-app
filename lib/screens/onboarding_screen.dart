@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
-import '../providers/cycle_provider.dart';
-import '../models/cycle_data.dart';
-import 'home_screen.dart';
+import '../providers/theme_provider.dart';
+import 'main_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -15,142 +16,165 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
 
-  // Form data
-  int _periodDuration = 5; // Default 5 days
-  int _cycleLength = 28; // Default 28 days
-  DateTime _lastPeriodStart = DateTime.now().subtract(const Duration(days: 28));
+  final List<Map<String, String>> _onboardingData = [
+    {
+      'animation': 'assets/animations/onboarding1.json',
+      'title': 'Track Your Cycle with Ease',
+      'description':
+          'Log your periods, symptoms, and moods to understand your body better. Get personalized predictions for your next cycle.',
+    },
+    {
+      'animation': 'assets/animations/onboarding2.json',
+      'title': 'Gain Valuable Insights',
+      'description':
+          'Discover patterns in your menstrual health. Our insights help you understand your body\'s rhythms and needs.',
+    },
+    {
+      'animation': 'assets/animations/onboarding3.json',
+      'title': 'Learn & Grow',
+      'description':
+          'Access educational resources, quizzes, and videos to learn more about menstrual health and wellness.',
+    },
+    {
+      'animation': 'assets/animations/onboarding4.json',
+      'title': 'A New, Better You',
+      'description':
+          'Take control of your health and wellness journey. Let\'s get started!',
+    },
+  ];
 
-  void _nextPage() {
-    if (_currentPage < 2) {
-      _pageController.nextPage(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
-    } else {
-      _finishOnboarding();
-    }
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
   }
 
-  void _previousPage() {
-    if (_currentPage > 0) {
-      _pageController.previousPage(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
+  Future<void> _finishOnboarding() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('hasSeenOnboarding', true);
+    if (mounted) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => const MainScreen()),
       );
     }
-  }
-
-  void _finishOnboarding() {
-    final cycleProvider = Provider.of<CycleProvider>(context, listen: false);
-
-    // Create initial cycle data
-    final initialCycle = CycleData(
-      periodStartDate: _lastPeriodStart,
-      periodEndDate: _lastPeriodStart.add(Duration(days: _periodDuration - 1)),
-      cycleLength: _cycleLength,
-    );
-
-    cycleProvider.addCycle(initialCycle);
-    cycleProvider.setInitialSetupComplete();
-
-    // Navigate to home screen
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (context) => const HomeScreen()),
-    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final theme = Theme.of(context);
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
       body: SafeArea(
         child: Column(
           children: [
-            // Progress indicator
-            Container(
-              padding: const EdgeInsets.all(20),
-              child: Row(
-                children: [
-                  for (int i = 0; i < 3; i++)
-                    Expanded(
-                      child: Container(
-                        height: 4,
-                        margin: EdgeInsets.only(right: i < 2 ? 8 : 0),
-                        decoration: BoxDecoration(
-                          color: i <= _currentPage
-                              ? Colors.pinkAccent
-                              : Colors.grey[300],
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-
-            // Page content
             Expanded(
-              child: PageView(
+              flex: 3,
+              child: PageView.builder(
                 controller: _pageController,
+                itemCount: _onboardingData.length,
                 onPageChanged: (index) {
                   setState(() {
                     _currentPage = index;
                   });
                 },
-                children: [
-                  _buildPeriodDurationPage(),
-                  _buildCycleLengthPage(),
-                  _buildLastPeriodPage(),
-                ],
+                itemBuilder: (context, index) {
+                  return OnboardingPage(
+                    animation: _onboardingData[index]['animation']!,
+                    title: _onboardingData[index]['title']!,
+                    description: _onboardingData[index]['description']!,
+                  );
+                },
               ),
             ),
-
-            // Navigation buttons
-            Container(
-              padding: const EdgeInsets.all(20),
-              child: Row(
-                children: [
-                  if (_currentPage > 0)
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: _previousPage,
-                        style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: Colors.pinkAccent),
-                          padding: const EdgeInsets.symmetric(vertical: 15),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(25),
-                          ),
-                        ),
-                        child: const Text(
-                          'Back',
-                          style: TextStyle(
-                            color: Colors.pinkAccent,
-                            fontSize: 16,
-                          ),
-                        ),
+            Expanded(
+              flex: 2,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(
+                        _onboardingData.length,
+                        (index) => buildDot(index, context),
                       ),
                     ),
-                  if (_currentPage > 0) const SizedBox(width: 15),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: _nextPage,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.pinkAccent,
-                        padding: const EdgeInsets.symmetric(vertical: 15),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(25),
+                    const SizedBox(height: 40),
+                    _currentPage == _onboardingData.length - 1
+                        ? ElevatedButton(
+                            onPressed: _finishOnboarding,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: theme.colorScheme.primary,
+                              foregroundColor: theme.colorScheme.onPrimary,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(30),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 80,
+                                vertical: 16,
+                              ),
+                            ),
+                            child: const Text(
+                              'Get Started',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          )
+                        : Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              TextButton(
+                                onPressed: _finishOnboarding,
+                                child: Text(
+                                  'Skip',
+                                  style: TextStyle(
+                                    color: theme.colorScheme.onSurface
+                                        .withOpacity(0.6),
+                                  ),
+                                ),
+                              ),
+                              ElevatedButton(
+                                onPressed: () {
+                                  _pageController.nextPage(
+                                    duration: const Duration(milliseconds: 400),
+                                    curve: Curves.easeInOut,
+                                  );
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: theme.colorScheme.primary,
+                                  foregroundColor: theme.colorScheme.onPrimary,
+                                  shape: const CircleBorder(),
+                                  padding: const EdgeInsets.all(20),
+                                ),
+                                child: const Icon(Icons.arrow_forward_ios),
+                              ),
+                            ],
+                          ),
+                    const SizedBox(height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          themeProvider.themeMode == ThemeMode.dark
+                              ? Icons.dark_mode
+                              : Icons.light_mode,
+                          color: theme.colorScheme.onSurface.withOpacity(0.6),
                         ),
-                      ),
-                      child: Text(
-                        _currentPage == 2 ? 'Get Started' : 'Next',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
+                        const SizedBox(width: 8),
+                        Switch(
+                          value: themeProvider.themeMode == ThemeMode.dark,
+                          onChanged: (value) {
+                            themeProvider.toggleTheme(value);
+                          },
                         ),
-                      ),
+                      ],
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ],
@@ -159,246 +183,105 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     );
   }
 
-  Widget _buildPeriodDurationPage() {
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.bloodtype, size: 80, color: Colors.pinkAccent),
-          const SizedBox(height: 30),
-          const Text(
-            'How many days does your period usually last?',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 15),
-          const Text(
-            'This helps us provide better predictions for your cycle.',
-            style: TextStyle(fontSize: 16, color: Colors.grey),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 40),
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withValues(alpha: 0.1),
-                  spreadRadius: 1,
-                  blurRadius: 10,
-                  offset: const Offset(0, 3),
-                ),
-              ],
-            ),
-            child: Column(
-              children: [
-                const SizedBox(height: 20),
-                Text(
-                  '$_periodDuration days',
-                  style: const TextStyle(
-                    fontSize: 48,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.pinkAccent,
-                  ),
-                ),
-                Slider(
-                  value: _periodDuration.toDouble(),
-                  min: 2,
-                  max: 10,
-                  divisions: 8,
-                  activeColor: Colors.pinkAccent,
-                  onChanged: (value) {
-                    setState(() {
-                      _periodDuration = value.round();
-                    });
-                  },
-                ),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 20),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text('2 days', style: TextStyle(color: Colors.grey)),
-                      Text('10 days', style: TextStyle(color: Colors.grey)),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 20),
-              ],
-            ),
-          ),
-        ],
+  AnimatedContainer buildDot(int index, BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      margin: const EdgeInsets.only(right: 8),
+      height: 8,
+      width: _currentPage == index ? 24 : 8,
+      decoration: BoxDecoration(
+        color: _currentPage == index
+            ? Theme.of(context).colorScheme.primary
+            : Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(4),
       ),
     );
   }
+}
 
-  Widget _buildCycleLengthPage() {
+class OnboardingPage extends StatelessWidget {
+  final String animation;
+  final String title;
+  final String description;
+
+  const OnboardingPage({
+    super.key,
+    required this.animation,
+    required this.title,
+    required this.description,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(24.0),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.calendar_month, size: 80, color: Colors.pinkAccent),
-          const SizedBox(height: 30),
-          const Text(
-            'How long is your menstrual cycle?',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 15),
-          const Text(
-            'Count from the first day of one period to the first day of the next.',
-            style: TextStyle(fontSize: 16, color: Colors.grey),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 40),
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withValues(alpha: 0.1),
-                  spreadRadius: 1,
-                  blurRadius: 10,
-                  offset: const Offset(0, 3),
-                ),
-              ],
-            ),
-            child: Column(
-              children: [
-                const SizedBox(height: 20),
-                Text(
-                  '$_cycleLength days',
-                  style: const TextStyle(
-                    fontSize: 48,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.pinkAccent,
-                  ),
-                ),
-                Slider(
-                  value: _cycleLength.toDouble(),
-                  min: 21,
-                  max: 35,
-                  divisions: 14,
-                  activeColor: Colors.pinkAccent,
-                  onChanged: (value) {
-                    setState(() {
-                      _cycleLength = value.round();
-                    });
-                  },
-                ),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 20),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text('21 days', style: TextStyle(color: Colors.grey)),
-                      Text('35 days', style: TextStyle(color: Colors.grey)),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 20),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLastPeriodPage() {
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.event, size: 80, color: Colors.pinkAccent),
-          const SizedBox(height: 30),
-          const Text(
-            'When did your last period start?',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 15),
-          const Text(
-            'This helps us calculate your current cycle and predict your next period.',
-            style: TextStyle(fontSize: 16, color: Colors.grey),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 40),
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withValues(alpha: 0.1),
-                  spreadRadius: 1,
-                  blurRadius: 10,
-                  offset: const Offset(0, 3),
-                ),
-              ],
-            ),
-            child: InkWell(
-              onTap: () async {
-                final date = await showDatePicker(
-                  context: context,
-                  initialDate: _lastPeriodStart,
-                  firstDate: DateTime.now().subtract(const Duration(days: 365)),
-                  lastDate: DateTime.now(),
-                  builder: (context, child) {
-                    return Theme(
-                      data: Theme.of(context).copyWith(
-                        colorScheme: const ColorScheme.light(
-                          primary: Colors.pinkAccent,
-                        ),
+          Expanded(
+            child: TweenAnimationBuilder<double>(
+              duration: const Duration(milliseconds: 800),
+              tween: Tween<double>(begin: 0, end: 1),
+              builder: (context, value, child) {
+                return Transform.scale(
+                  scale: value,
+                  child: Opacity(
+                    opacity: value,
+                    child: Container(
+                      height: 300,
+                      width: 300,
+                      child: Lottie.asset(
+                        animation,
+                        fit: BoxFit.contain,
+                        repeat: true,
+                        animate: true,
+                        errorBuilder: (context, error, stackTrace) {
+                          // Fallback to a beautiful icon if animation fails
+                          return Container(
+                            height: 300,
+                            width: 300,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  theme.colorScheme.primary.withOpacity(0.1),
+                                  theme.colorScheme.secondary.withOpacity(0.1),
+                                ],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              borderRadius: BorderRadius.circular(150),
+                            ),
+                            child: Icon(
+                              _getIconForAnimation(animation),
+                              size: 120,
+                              color: theme.colorScheme.primary,
+                            ),
+                          );
+                        },
                       ),
-                      child: child!,
-                    );
-                  },
+                    ),
+                  ),
                 );
-                if (date != null) {
-                  setState(() {
-                    _lastPeriodStart = date;
-                  });
-                }
               },
-              borderRadius: BorderRadius.circular(20),
-              child: Container(
-                padding: const EdgeInsets.all(30),
-                child: Column(
-                  children: [
-                    Text(
-                      _formatDate(_lastPeriodStart),
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.pinkAccent,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    const Text(
-                      'Tap to change date',
-                      style: TextStyle(color: Colors.grey, fontSize: 14),
-                    ),
-                  ],
-                ),
-              ),
+            ),
+          ),
+          const SizedBox(height: 40),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.headlineMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: theme.colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            description,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyLarge?.copyWith(
+              color: theme.colorScheme.onSurface.withOpacity(0.7),
+              height: 1.5,
             ),
           ),
         ],
@@ -406,21 +289,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     );
   }
 
-  String _formatDate(DateTime date) {
-    const months = [
-      'January',
-      'February',
-      'March',
-      'April',
-      'May',
-      'June',
-      'July',
-      'August',
-      'September',
-      'October',
-      'November',
-      'December',
-    ];
-    return '${months[date.month - 1]} ${date.day}, ${date.year}';
+  IconData _getIconForAnimation(String animationPath) {
+    if (animationPath.contains('onboarding1')) {
+      return Icons.favorite; // Heart for cycle tracking
+    } else if (animationPath.contains('onboarding2')) {
+      return Icons.insights; // Insights icon
+    } else if (animationPath.contains('onboarding3')) {
+      return Icons.school; // Learning icon
+    } else if (animationPath.contains('onboarding4')) {
+      return Icons.celebration; // Celebration for getting started
+    }
+    return Icons.health_and_safety; // Default health icon
   }
 }

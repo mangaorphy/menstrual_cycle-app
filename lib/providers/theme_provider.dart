@@ -2,12 +2,26 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ThemeProvider with ChangeNotifier {
-  bool _isDarkMode = false;
+  ThemeMode _themeMode = ThemeMode.system;
 
-  bool get isDarkMode => _isDarkMode;
+  ThemeMode get themeMode => _themeMode;
 
   ThemeProvider() {
     _loadTheme();
+  }
+
+  void _loadTheme() async {
+    final prefs = await SharedPreferences.getInstance();
+    final isDarkMode = prefs.getBool('isDarkMode') ?? false;
+    _themeMode = isDarkMode ? ThemeMode.dark : ThemeMode.light;
+    notifyListeners();
+  }
+
+  void toggleTheme(bool isDarkMode) async {
+    _themeMode = isDarkMode ? ThemeMode.dark : ThemeMode.light;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('isDarkMode', isDarkMode);
+    notifyListeners();
   }
 
   // Light theme
@@ -26,7 +40,7 @@ class ThemeProvider with ChangeNotifier {
     cardTheme: CardThemeData(
       color: Colors.white,
       elevation: 2,
-      shadowColor: Colors.black.withValues(alpha: 0.1),
+      shadowColor: Colors.black.withOpacity(0.1),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
@@ -54,7 +68,7 @@ class ThemeProvider with ChangeNotifier {
     cardTheme: CardThemeData(
       color: const Color(0xFF1E1E1E),
       elevation: 2,
-      shadowColor: Colors.black.withValues(alpha: 0.3),
+      shadowColor: Colors.black.withOpacity(0.3),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
@@ -65,24 +79,4 @@ class ThemeProvider with ChangeNotifier {
       ),
     ),
   );
-
-  // Toggle theme
-  void toggleTheme() {
-    _isDarkMode = !_isDarkMode;
-    _saveTheme();
-    notifyListeners();
-  }
-
-  // Load theme from shared preferences
-  Future<void> _loadTheme() async {
-    final prefs = await SharedPreferences.getInstance();
-    _isDarkMode = prefs.getBool('isDarkMode') ?? false;
-    notifyListeners();
-  }
-
-  // Save theme to shared preferences
-  Future<void> _saveTheme() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('isDarkMode', _isDarkMode);
-  }
 }

@@ -3,6 +3,11 @@ import 'package:provider/provider.dart';
 import '../providers/theme_provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/cycle_provider.dart';
+import '../providers/language_provider.dart';
+import '../l10n/app_localizations.dart';
+import '../l10n/app_localizations_en.dart';
+import '../l10n/app_localizations_sn.dart';
+import 'language_settings_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -15,6 +20,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
+  // Helper method to get the correct localizations based on user's language choice
+  AppLocalizations _getLocalizations(BuildContext context) {
+    final languageProvider = Provider.of<LanguageProvider>(
+      context,
+      listen: false,
+    );
+    if (languageProvider.locale.languageCode == 'sn') {
+      return AppLocalizationsSn();
+    } else {
+      return AppLocalizationsEn();
+    }
+  }
+
   @override
   void dispose() {
     _emailController.dispose();
@@ -25,16 +43,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
-    final authProvider = Provider.of<AuthProvider>(context);
-    final cycleProvider = Provider.of<CycleProvider>(context);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Settings'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
+        automaticallyImplyLeading: false, // This removes the back button
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -52,6 +65,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _buildSectionHeader('Appearance'),
             const SizedBox(height: 16),
             _buildAppearanceCard(themeProvider),
+
+            const SizedBox(height: 30),
+
+            // Language Section
+            _buildSectionHeader('Language'),
+            const SizedBox(height: 16),
+            _buildLanguageCard(),
 
             const SizedBox(height: 30),
 
@@ -238,6 +258,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildAppearanceCard(ThemeProvider themeProvider) {
+    final theme = Theme.of(context);
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -245,21 +266,74 @@ class _SettingsScreenState extends State<SettingsScreen> {
           children: [
             ListTile(
               leading: Icon(
-                themeProvider.isDarkMode ? Icons.dark_mode : Icons.light_mode,
-                color: Theme.of(context).colorScheme.primary,
+                themeProvider.themeMode == ThemeMode.dark
+                    ? Icons.dark_mode
+                    : Icons.light_mode,
+                color: theme.colorScheme.primary,
               ),
               title: const Text('Dark Mode'),
-              subtitle: Text(themeProvider.isDarkMode ? 'On' : 'Off'),
+              subtitle: Text(
+                themeProvider.themeMode == ThemeMode.dark ? 'On' : 'Off',
+              ),
               trailing: Switch(
-                value: themeProvider.isDarkMode,
-                onChanged: (value) => themeProvider.toggleTheme(),
-                activeColor: Theme.of(context).colorScheme.primary,
+                value: themeProvider.themeMode == ThemeMode.dark,
+                onChanged: (value) {
+                  themeProvider.toggleTheme(value);
+                },
+                activeColor: theme.colorScheme.primary,
               ),
             ),
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildLanguageCard() {
+    final theme = Theme.of(context);
+    final languageProvider = Provider.of<LanguageProvider>(context);
+    final localizations = _getLocalizations(context);
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            ListTile(
+              leading: Icon(Icons.language, color: theme.colorScheme.primary),
+              title: Text(localizations.language),
+              subtitle: Text(
+                _getCurrentLanguageName(languageProvider.locale.languageCode),
+              ),
+              trailing: Icon(
+                Icons.arrow_forward_ios,
+                size: 16,
+                color: theme.colorScheme.onSurface.withOpacity(0.6),
+              ),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const LanguageSettingsScreen(),
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _getCurrentLanguageName(String languageCode) {
+    switch (languageCode) {
+      case 'en':
+        return 'English';
+      case 'sn':
+        return 'Shona';
+      default:
+        return 'English';
+    }
   }
 
   Widget _buildSettingsCard() {
@@ -374,23 +448,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
         // Update cycle provider with authenticated user
         await cycleProvider.updateUserAuthentication(authProvider.user?.uid);
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Successfully signed in!'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Successfully signed in!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
 
         _emailController.clear();
         _passwordController.clear();
       }
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please fill in all fields'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please fill in all fields'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -410,23 +488,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
         // Update cycle provider with authenticated user
         await cycleProvider.updateUserAuthentication(authProvider.user?.uid);
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Account created successfully!'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Account created successfully!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
 
         _emailController.clear();
         _passwordController.clear();
       }
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please fill in all fields'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please fill in all fields'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -437,8 +519,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await authProvider.signOut();
     await cycleProvider.updateUserAuthentication(null);
 
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Signed out successfully')));
+    if (mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Signed out successfully')));
+    }
   }
 }
