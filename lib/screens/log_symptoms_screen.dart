@@ -109,7 +109,7 @@ class _LogSymptomsScreenState extends State<LogSymptomsScreen> {
           children: [
             ..._symptomCategories
                 .map((category) => _buildSymptomCategory(category))
-                .toList(),
+                ,
             const SizedBox(height: 24),
             _buildSectionTitle('Notes (Optional)'),
             const SizedBox(height: 12),

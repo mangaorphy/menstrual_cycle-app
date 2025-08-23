@@ -228,7 +228,7 @@ class OnboardingPage extends StatelessWidget {
                   scale: value,
                   child: Opacity(
                     opacity: value,
-                    child: Container(
+                    child: SizedBox(
                       height: 300,
                       width: 300,
                       child: Lottie.asset(

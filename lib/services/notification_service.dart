@@ -25,9 +25,14 @@ class NotificationService {
     // Initialize timezone
     tz.initializeTimeZones();
 
-    // Set local timezone
-    final String timeZoneName = _getLocalTimeZoneName();
-    tz.setLocalLocation(tz.getLocation(timeZoneName));
+    // Set local timezone with error handling
+    try {
+      final String timeZoneName = _getLocalTimeZoneName();
+      tz.setLocalLocation(tz.getLocation(timeZoneName));
+    } catch (e) {
+      print('⚠️ Failed to set timezone: $e. Using UTC as fallback.');
+      tz.setLocalLocation(tz.getLocation('UTC'));
+    }
 
     // Android initialization settings
     const AndroidInitializationSettings androidSettings =
@@ -67,7 +72,22 @@ class NotificationService {
   /// Get the local timezone name
   String _getLocalTimeZoneName() {
     try {
-      return DateTime.now().timeZoneName;
+      final timeZoneName = DateTime.now().timeZoneName;
+
+      // Handle common timezone mappings
+      switch (timeZoneName) {
+        case 'CAT': // Central Africa Time
+          return 'Africa/Johannesburg';
+        case 'EAT': // East Africa Time
+          return 'Africa/Nairobi';
+        case 'WAT': // West Africa Time
+          return 'Africa/Lagos';
+        case 'SAST': // South Africa Standard Time
+          return 'Africa/Johannesburg';
+        default:
+          // Try to use the timezone name as is
+          return timeZoneName;
+      }
     } catch (e) {
       // Fallback to UTC if timezone detection fails
       return 'UTC';

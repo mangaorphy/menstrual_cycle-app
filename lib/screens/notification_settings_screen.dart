@@ -259,13 +259,13 @@ class _NotificationSettingsScreenState
           ),
         ),
         const SizedBox(height: 8),
-        Row(
+        Wrap(
+          spacing: 8,
           children: [1, 2, 3, 4, 5].map((days) {
             final isSelected = notificationProvider.periodReminderDays == days;
             return GestureDetector(
               onTap: () => notificationProvider.setPeriodReminderDays(days),
               child: Container(
-                margin: const EdgeInsets.only(right: 8),
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
                   vertical: 8,

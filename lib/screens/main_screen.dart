@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'home_screen.dart';
 import 'calendar_screen.dart';
 import 'insights_screen.dart';
 import 'settings_screen.dart';
+import '../providers/navigation_provider.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -12,8 +14,6 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
-  int _currentIndex = 0;
-
   final List<Widget> _screens = [
     const HomeScreen(),
     const CalendarScreen(),
@@ -24,9 +24,10 @@ class _MainScreenState extends State<MainScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final navigationProvider = Provider.of<NavigationProvider>(context);
 
     return Scaffold(
-      body: _screens[_currentIndex],
+      body: _screens[navigationProvider.selectedIndex],
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: theme.cardColor,
@@ -43,11 +44,9 @@ class _MainScreenState extends State<MainScreen> {
             backgroundColor: Colors.transparent,
             elevation: 0,
             type: BottomNavigationBarType.fixed,
-            currentIndex: _currentIndex,
+            currentIndex: navigationProvider.selectedIndex,
             onTap: (index) {
-              setState(() {
-                _currentIndex = index;
-              });
+              navigationProvider.setIndex(index);
             },
             selectedItemColor: theme.colorScheme.primary,
             unselectedItemColor: theme.colorScheme.onSurface.withValues(

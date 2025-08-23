@@ -262,12 +262,12 @@ class VideoLibraryScreen extends StatelessWidget {
                           theme,
                         ),
                       );
-                    }).toList(),
+                    }),
                   ],
                 ),
               ),
             );
-          }).toList(),
+          }),
 
           SliverPadding(padding: EdgeInsets.only(bottom: 32)),
         ],

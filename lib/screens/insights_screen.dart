@@ -19,6 +19,9 @@ class InsightsScreen extends StatefulWidget {
 class _InsightsScreenState extends State<InsightsScreen>
     with TickerProviderStateMixin {
   late AnimationController _fadeController;
+  late TextEditingController _searchController;
+  String _searchQuery = '';
+  bool _isSearching = false;
 
   @override
   void initState() {
@@ -28,64 +31,493 @@ class _InsightsScreenState extends State<InsightsScreen>
       vsync: this,
     );
     _fadeController.forward();
+    _searchController = TextEditingController();
   }
 
   @override
   void dispose() {
     _fadeController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final cycleProvider = Provider.of<CycleProvider>(context);
-    final educationProvider = Provider.of<EducationProvider>(context);
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      body: CustomScrollView(
-        slivers: [
-          // Modern App Bar with gradient
-          SliverAppBar(
-            expandedHeight: 120,
-            pinned: true,
-            backgroundColor: Colors.transparent,
-            flexibleSpace: FlexibleSpaceBar(
-              background: Container(
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Custom App Bar with Search
+            _buildCustomAppBar(theme),
+            
+            // Content
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Quick Topics Section
+                    _buildQuickTopicsSection(theme),
+                    const SizedBox(height: 30),
+                    
+                    // Reproductive Health 101
+                    _buildReproductiveHealthSection(theme),
+                    const SizedBox(height: 30),
+                    
+                    // Sex Section
+                    _buildSexSection(theme),
+                    const SizedBox(height: 30),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCustomAppBar(ThemeData theme) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: theme.scaffoldBackgroundColor,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          // App Icon
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: Colors.pink,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              Icons.favorite,
+              color: Colors.white,
+              size: 20,
+            ),
+          ),
+          
+          const SizedBox(width: 16),
+          
+          // Search Bar
+          Expanded(
+            child: Container(
+              height: 45,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                borderRadius: BorderRadius.circular(25),
+                border: Border.all(
+                  color: theme.dividerColor.withOpacity(0.3),
+                ),
+              ),
+              child: TextField(
+                controller: _searchController,
+                onChanged: (value) {
+                  setState(() {
+                    _searchQuery = value;
+                  });
+                },
+                decoration: InputDecoration(
+                  hintText: 'Search',
+                  hintStyle: TextStyle(
+                    color: theme.colorScheme.onSurface.withOpacity(0.5),
+                  ),
+                  prefixIcon: Icon(
+                    Icons.search,
+                    color: theme.colorScheme.onSurface.withOpacity(0.5),
+                    size: 20,
+                  ),
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          
+          const SizedBox(width: 16),
+          
+          // Bookmark Icon
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: theme.dividerColor.withOpacity(0.3),
+              ),
+            ),
+            child: Icon(
+              Icons.bookmark_border,
+              color: theme.colorScheme.onSurface,
+              size: 20,
+            ),
+          ),
+          
+          const SizedBox(width: 12),
+          
+          // Notification Icon with Badge
+          Stack(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      theme.colorScheme.primary,
-                      theme.colorScheme.secondary,
-                      theme.colorScheme.tertiary,
+                  color: theme.colorScheme.surface,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: theme.dividerColor.withOpacity(0.3),
+                  ),
+                ),
+                child: Icon(
+                  Icons.notifications_none,
+                  color: theme.colorScheme.onSurface,
+                  size: 20,
+                ),
+              ),
+              Positioned(
+                top: 6,
+                right: 6,
+                child: Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: Colors.red,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuickTopicsSection(ThemeData theme) {
+    final topics = [
+      {
+        'title': 'Am I\npregnant?',
+        'icon': Icons.pregnant_woman_outlined,
+        'color': Colors.blue,
+      },
+      {
+        'title': 'Orgasms\nand pleasure',
+        'icon': Icons.favorite_outline,
+        'color': Colors.pink,
+      },
+      {
+        'title': 'Vaginal\ndischarge',
+        'icon': Icons.water_drop_outlined,
+        'color': Colors.purple,
+      },
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: topics.map((topic) {
+            return _buildTopicCard(
+              topic['title'] as String,
+              topic['icon'] as IconData,
+              topic['color'] as Color,
+              theme,
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTopicCard(String title, IconData icon, Color color, ThemeData theme) {
+    return Expanded(
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 4),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: theme.cardColor,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: theme.dividerColor.withOpacity(0.1),
+          ),
+        ),
+        child: Column(
+          children: [
+            Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(25),
+              ),
+              child: Icon(
+                icon,
+                color: color,
+                size: 24,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: theme.colorScheme.onSurface,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildReproductiveHealthSection(ThemeData theme) {
+    final articles = [
+      {
+        'title': 'How to clean your\nvulva',
+        'color': const Color(0xFFFFB5A7),
+        'image': 'vulva_care',
+      },
+      {
+        'title': 'Early signs of\npregnancy',
+        'color': const Color(0xFFFFC1A8),
+        'image': 'pregnancy_signs',
+      },
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Reproductive health 101',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: theme.colorScheme.onSurface,
+          ),
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: articles.map((article) {
+            return Expanded(
+              child: Container(
+                margin: const EdgeInsets.only(right: articles.last == article ? 0 : 12),
+                height: 180,
+                decoration: BoxDecoration(
+                  color: article['color'] as Color,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Text(
+                        article['title'] as String,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      ),
                     ],
                   ),
                 ),
-                child: SafeArea(
-                  child: Padding(
-                    padding: const EdgeInsets.only(left: 20, bottom: 20),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Your Journey',
-                          style: TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSexSection(ThemeData theme) {
+    final sexTopics = [
+      {
+        'title': '9 life-changing\nmasturbation tips',
+        'color': const Color(0xFFE6D7FF),
+        'type': 'article',
+      },
+      {
+        'title': 'How to choose\nyour first sex toy',
+        'color': const Color(0xFFFF9FE5),
+        'type': 'video',
+      },
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Sex',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: theme.colorScheme.onSurface,
+          ),
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: sexTopics.map((topic) {
+            final isVideo = topic['type'] == 'video';
+            return Expanded(
+              child: Container(
+                margin: const EdgeInsets.only(right: sexTopics.last == topic ? 0 : 12),
+                height: 180,
+                decoration: BoxDecoration(
+                  color: topic['color'] as Color,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Stack(
+                  children: [
+                    if (isVideo)
+                      Positioned(
+                        top: 16,
+                        left: 16,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
                           ),
-                        ),
-                        Text(
-                          'Insights & Education',
-                          style: TextStyle(
-                            fontSize: 16,
+                          decoration: BoxDecoration(
                             color: Colors.white.withOpacity(0.9),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.play_arrow,
+                                color: Colors.pink,
+                                size: 16,
+                              ),
+                              const SizedBox(width: 4),
+                              const Text(
+                                'Video',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.pink,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
+                      ),
+                    Positioned(
+                      bottom: 20,
+                      left: 20,
+                      right: 20,
+                      child: Text(
+                        topic['title'] as String,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+                                        fontSize: 16,
+                                        color: Colors.white.withOpacity(0.9),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              IconButton(
+                                onPressed: () {
+                                  setState(() {
+                                    _isSearching = true;
+                                  });
+                                },
+                                icon: Icon(
+                                  Icons.search,
+                                  color: Colors.white,
+                                  size: 28,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ] else ...[
+                          Container(
+                            height: 48,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(24),
+                              border: Border.all(
+                                color: Colors.white.withOpacity(0.3),
+                              ),
+                            ),
+                            child: TextField(
+                              controller: _searchController,
+                              autofocus: true,
+                              style: TextStyle(color: Colors.white),
+                              decoration: InputDecoration(
+                                hintText: 'Search insights, videos, quizzes...',
+                                hintStyle: TextStyle(
+                                  color: Colors.white.withOpacity(0.7),
+                                ),
+                                border: InputBorder.none,
+                                prefixIcon: Icon(
+                                  Icons.search,
+                                  color: Colors.white.withOpacity(0.8),
+                                ),
+                                suffixIcon: IconButton(
+                                  onPressed: () {
+                                    setState(() {
+                                      _isSearching = false;
+                                      _searchQuery = '';
+                                      _searchController.clear();
+                                    });
+                                  },
+                                  icon: Icon(
+                                    Icons.close,
+                                    color: Colors.white.withOpacity(0.8),
+                                  ),
+                                ),
+                                contentPadding: EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 12,
+                                ),
+                              ),
+                              onChanged: (value) {
+                                setState(() {
+                                  _searchQuery = value.toLowerCase();
+                                });
+                              },
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -99,58 +531,65 @@ class _InsightsScreenState extends State<InsightsScreen>
             padding: const EdgeInsets.all(16),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
-                // Personalized Dashboard
-                PersonalizedDashboard(
-                  cycleProvider: cycleProvider,
-                  theme: theme,
-                ),
-
-                const SizedBox(height: 24),
-
-                // Quick Access Section
-                Text(
-                  'Quick Access',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.onSurface,
+                // Search Results or Regular Content
+                if (_isSearching && _searchQuery.isNotEmpty)
+                  _buildSearchResults(educationProvider, theme)
+                else if (_isSearching && _searchQuery.isEmpty)
+                  _buildSearchSuggestions(theme)
+                else ...[
+                  // Personalized Dashboard
+                  PersonalizedDashboard(
+                    cycleProvider: cycleProvider,
+                    theme: theme,
                   ),
-                ),
-                const SizedBox(height: 16),
 
-                _buildQuickAccessGrid(educationProvider, theme),
+                  const SizedBox(height: 24),
 
-                const SizedBox(height: 24),
-
-                // Learning Journey
-                Text(
-                  'Your Learning Journey',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.onSurface,
+                  // Quick Access Section
+                  Text(
+                    'Quick Access',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.onSurface,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 16),
+                  const SizedBox(height: 16),
 
-                _buildLearningJourney(educationProvider, theme),
+                  _buildQuickAccessGrid(educationProvider, theme),
 
-                const SizedBox(height: 24),
+                  const SizedBox(height: 24),
 
-                // Health Insights
-                Text(
-                  'Health Insights',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.onSurface,
+                  // Learning Journey
+                  Text(
+                    'Your Learning Journey',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.onSurface,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 16),
+                  const SizedBox(height: 16),
 
-                _buildHealthInsights(cycleProvider, theme),
+                  _buildLearningJourney(educationProvider, theme),
 
-                const SizedBox(height: 100), // Bottom padding for FAB
+                  const SizedBox(height: 24),
+
+                  // Health Insights
+                  Text(
+                    'Health Insights',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  _buildHealthInsights(cycleProvider, theme),
+
+                  const SizedBox(height: 100), // Bottom padding for FAB
+                ],
               ]),
             ),
           ),
@@ -773,5 +1212,265 @@ class _InsightsScreenState extends State<InsightsScreen>
     } else {
       return 'PMS symptoms are common now. Try stress-reduction techniques.';
     }
+  }
+
+  Widget _buildSearchResults(
+    EducationProvider educationProvider,
+    ThemeData theme,
+  ) {
+    final searchableContent = _getSearchableContent();
+    final filteredContent = searchableContent
+        .where(
+          (item) =>
+              item['title'].toLowerCase().contains(_searchQuery) ||
+              item['description'].toLowerCase().contains(_searchQuery) ||
+              item['category'].toLowerCase().contains(_searchQuery),
+        )
+        .toList();
+
+    if (filteredContent.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(40),
+        child: Column(
+          children: [
+            Icon(Icons.search_off, size: 64, color: Colors.grey),
+            const SizedBox(height: 16),
+            Text(
+              'No results found for "$_searchQuery"',
+              style: TextStyle(
+                fontSize: 18,
+                color: theme.colorScheme.onSurface.withOpacity(0.7),
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Try different keywords or browse categories below',
+              style: TextStyle(
+                fontSize: 14,
+                color: theme.colorScheme.onSurface.withOpacity(0.5),
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Search Results (${filteredContent.length})',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: theme.colorScheme.onSurface,
+          ),
+        ),
+        const SizedBox(height: 16),
+        ...filteredContent.map((item) => _buildSearchResultCard(item, theme)),
+      ],
+    );
+  }
+
+  Widget _buildSearchSuggestions(ThemeData theme) {
+    final suggestions = [
+      'Period tracking tips',
+      'Menstrual cup guide',
+      'Tampon safety',
+      'Cycle phases',
+      'PMS remedies',
+      'Iron-rich foods',
+      'Exercise during periods',
+      'Mood tracking',
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Popular Searches',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: theme.colorScheme.onSurface,
+          ),
+        ),
+        const SizedBox(height: 16),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: suggestions
+              .map(
+                (suggestion) => GestureDetector(
+                  onTap: () {
+                    _searchController.text = suggestion;
+                    setState(() {
+                      _searchQuery = suggestion.toLowerCase();
+                    });
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: theme.colorScheme.primary.withOpacity(0.3),
+                      ),
+                    ),
+                    child: Text(
+                      suggestion,
+                      style: TextStyle(
+                        color: theme.colorScheme.primary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ),
+              )
+              .toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSearchResultCard(Map<String, dynamic> item, ThemeData theme) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.cardColor,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: theme.dividerColor.withOpacity(0.2)),
+      ),
+      child: InkWell(
+        onTap: () => item['onTap'](),
+        child: Row(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: item['color'].withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(item['icon'], color: item['color'], size: 24),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item['title'],
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    item['description'],
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: theme.colorScheme.onSurface.withOpacity(0.7),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    item['category'],
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: item['color'],
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.arrow_forward_ios,
+              size: 16,
+              color: theme.colorScheme.onSurface.withOpacity(0.5),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  List<Map<String, dynamic>> _getSearchableContent() {
+    return [
+      {
+        'title': 'Period Products Guide',
+        'description':
+            'Learn about tampons, pads, cups and how to use them safely',
+        'category': 'Products',
+        'icon': Icons.inventory_2,
+        'color': Colors.purple,
+        'onTap': () => _navigateToProductsTab(),
+      },
+      {
+        'title': 'Knowledge Quizzes',
+        'description': 'Test your understanding with interactive quizzes',
+        'category': 'Education',
+        'icon': Icons.quiz,
+        'color': Colors.blue,
+        'onTap': () => _navigateToQuiz(),
+      },
+      {
+        'title': 'Video Library',
+        'description': 'Educational videos about menstrual health',
+        'category': 'Videos',
+        'icon': Icons.play_circle,
+        'color': Colors.red,
+        'onTap': () => _navigateToVideos(),
+      },
+      {
+        'title': 'Tampon Safety Guide',
+        'description': 'Step-by-step instructions for safe tampon use',
+        'category': 'Products',
+        'icon': Icons.health_and_safety,
+        'color': Colors.orange,
+        'onTap': () => _navigateToProductsTab(),
+      },
+      {
+        'title': 'Menstrual Cup Tutorial',
+        'description': 'Complete guide to using menstrual cups',
+        'category': 'Products',
+        'icon': Icons.eco,
+        'color': Colors.green,
+        'onTap': () => _navigateToProductsTab(),
+      },
+      {
+        'title': 'Cycle Tracking Tips',
+        'description': 'Learn effective ways to track your menstrual cycle',
+        'category': 'Education',
+        'icon': Icons.trending_up,
+        'color': Colors.teal,
+        'onTap': () => _navigateToQuiz(),
+      },
+      {
+        'title': 'PMS Management',
+        'description': 'Natural remedies and tips for managing PMS symptoms',
+        'category': 'Health',
+        'icon': Icons.spa,
+        'color': Colors.indigo,
+        'onTap': () => _navigateToVideos(),
+      },
+      {
+        'title': 'Iron-Rich Foods',
+        'description': 'Nutrition guide for healthy periods',
+        'category': 'Nutrition',
+        'icon': Icons.restaurant,
+        'color': Colors.brown,
+        'onTap': () => _navigateToVideos(),
+      },
+    ];
   }
 }

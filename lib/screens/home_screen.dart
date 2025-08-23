@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import '../providers/cycle_provider.dart';
 import '../providers/theme_provider.dart';
 import '../providers/language_provider.dart';
+import '../providers/navigation_provider.dart';
+import '../providers/notification_provider.dart';
 import '../l10n/app_localizations.dart';
 import '../l10n/app_localizations_en.dart';
 import '../l10n/app_localizations_sn.dart';
@@ -125,39 +127,183 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             // Floating background elements
             _buildFloatingElements(),
             SafeArea(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 20,
-                ),
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(
-                    maxWidth: MediaQuery.of(context).size.width - 32,
+              child: Column(
+                children: [
+                  // Custom App Bar
+                  _buildCustomAppBar(),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 20,
+                      ),
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          maxWidth: MediaQuery.of(context).size.width - 32,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildAnimatedGreeting(),
+                            const SizedBox(height: 30),
+                            _buildCycleOverview(cycleProvider),
+                            const SizedBox(height: 20),
+                            _buildCycleStatsBar(cycleProvider),
+                            const SizedBox(height: 30),
+                            _buildQuickActions(),
+                            const SizedBox(height: 30),
+                            _buildProductGuideSection(),
+                            const SizedBox(height: 30),
+                            _buildHealthInsights(),
+                            const SizedBox(height: 30),
+                            _buildTodaysReminders(),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 20),
-                      _buildAnimatedGreeting(),
-                      const SizedBox(height: 30),
-                      _buildCycleOverview(cycleProvider),
-                      const SizedBox(height: 30),
-                      _buildQuickActions(),
-                      const SizedBox(height: 30),
-                      _buildProductGuideSection(),
-                      const SizedBox(height: 30),
-                      _buildHealthInsights(),
-                      const SizedBox(height: 30),
-                      _buildTodaysReminders(),
-                    ],
-                  ),
-                ),
+                ],
               ),
             ),
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildCustomAppBar() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final unreadCount = 2; // Mock count for now, will integrate with real notifications later
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          // Menu/Profile
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: isDarkMode 
+                  ? Colors.white.withOpacity(0.1) 
+                  : Colors.white.withOpacity(0.8),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isDarkMode
+                    ? Colors.white.withOpacity(0.2)
+                    : Colors.grey.withOpacity(0.3),
+              ),
+            ),
+            child: Icon(
+              Icons.menu,
+              color: isDarkMode ? Colors.white : Colors.black87,
+              size: 20,
+            ),
+          ),
+
+          // Date
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: isDarkMode 
+                  ? Colors.white.withOpacity(0.1) 
+                  : Colors.white.withOpacity(0.8),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: isDarkMode
+                    ? Colors.white.withOpacity(0.2)
+                    : Colors.grey.withOpacity(0.3),
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.calendar_today,
+                  size: 16,
+                  color: isDarkMode ? Colors.white : Colors.black87,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  _getCurrentDate(),
+                  style: TextStyle(
+                    color: isDarkMode ? Colors.white : Colors.black87,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Notification bell with badge
+          GestureDetector(
+            onTap: () {
+              Navigator.pushNamed(context, '/notification-settings');
+            },
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: isDarkMode 
+                    ? Colors.white.withOpacity(0.1) 
+                    : Colors.white.withOpacity(0.8),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: isDarkMode
+                      ? Colors.white.withOpacity(0.2)
+                      : Colors.grey.withOpacity(0.3),
+                ),
+              ),
+              child: Stack(
+                children: [
+                  Center(
+                    child: Icon(
+                      Icons.notifications,
+                      color: isDarkMode ? Colors.white : Colors.black87,
+                      size: 20,
+                    ),
+                  ),
+                  if (unreadCount > 0)
+                    Positioned(
+                      top: 6,
+                      right: 6,
+                      child: Container(
+                        width: 16,
+                        height: 16,
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Center(
+                          child: Text(
+                            unreadCount > 9 ? '9+' : unreadCount.toString(),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _getCurrentDate() {
+    final now = DateTime.now();
+    final months = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    return '${months[now.month - 1]} ${now.day}';
   }
 
   Widget _buildFloatingElements() {
@@ -244,439 +390,571 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
     return SlideTransition(
       position: _slideAnimation,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: containerColor,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: borderColor),
-          boxShadow: isDarkMode
-              ? []
-              : [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              flex: 3,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  TweenAnimationBuilder<double>(
-                    duration: const Duration(milliseconds: 1000),
-                    tween: Tween<double>(begin: 0, end: 1),
-                    builder: (context, value, child) {
-                      return Opacity(
-                        opacity: value,
-                        child: Text(
-                          _getGreeting(),
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: primaryTextColor,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                          maxLines: 2,
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 8),
-                  TweenAnimationBuilder<double>(
-                    duration: const Duration(milliseconds: 1200),
-                    tween: Tween<double>(begin: 0, end: 1),
-                    builder: (context, value, child) {
-                      return Opacity(
-                        opacity: value,
-                        child: Text(
-                          'How are you feeling today?',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: secondaryTextColor,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                          maxLines: 1,
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              flex: 1,
-              child: Stack(
-                children: [
-                  ScaleTransition(
-                    scale: _pulseAnimation,
-                    child: Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        color: Colors.pink.withOpacity(0.3),
-                        borderRadius: BorderRadius.circular(40),
-                      ),
-                      child: const Icon(
-                        Icons.favorite,
-                        color: Colors.white,
-                        size: 40,
-                      ),
+      child: GestureDetector(
+        onTap: () {
+          // Navigate to Calendar tab
+          Provider.of<NavigationProvider>(
+            context,
+            listen: false,
+          ).navigateToCalendar();
+        },
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: containerColor,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: borderColor),
+            boxShadow: isDarkMode
+                ? []
+                : [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
                     ),
-                  ),
-                  // Floating emojis around the heart
-                  Positioned(
-                    top: -10,
-                    right: -5,
-                    child: ScaleTransition(
+                  ],
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                flex: 3,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TweenAnimationBuilder<double>(
+                      duration: const Duration(milliseconds: 1000),
+                      tween: Tween<double>(begin: 0, end: 1),
+                      builder: (context, value, child) {
+                        return Opacity(
+                          opacity: value,
+                          child: Text(
+                            _getGreeting(),
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: primaryTextColor,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 2,
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                    TweenAnimationBuilder<double>(
+                      duration: const Duration(milliseconds: 1200),
+                      tween: Tween<double>(begin: 0, end: 1),
+                      builder: (context, value, child) {
+                        return Opacity(
+                          opacity: value,
+                          child: Text(
+                            'How are you feeling today?',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: secondaryTextColor,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                flex: 1,
+                child: Stack(
+                  children: [
+                    ScaleTransition(
                       scale: _pulseAnimation,
-                      child: const Text('✨', style: TextStyle(fontSize: 20)),
+                      child: Container(
+                        width: 80,
+                        height: 80,
+                        decoration: BoxDecoration(
+                          color: Colors.pink.withOpacity(0.3),
+                          borderRadius: BorderRadius.circular(40),
+                        ),
+                        child: const Icon(
+                          Icons.favorite,
+                          color: Colors.white,
+                          size: 40,
+                        ),
+                      ),
                     ),
-                  ),
-                  Positioned(
-                    bottom: -5,
-                    left: -10,
-                    child: RotationTransition(
-                      turns: _rotateAnimation,
-                      child: const Text('🌸', style: TextStyle(fontSize: 16)),
+                    // Floating emojis around the heart
+                    Positioned(
+                      top: -10,
+                      right: -5,
+                      child: ScaleTransition(
+                        scale: _pulseAnimation,
+                        child: const Text('✨', style: TextStyle(fontSize: 20)),
+                      ),
                     ),
-                  ),
-                  Positioned(
-                    top: 10,
-                    left: -15,
-                    child: ScaleTransition(
-                      scale: _bounceAnimation,
-                      child: const Text('💖', style: TextStyle(fontSize: 14)),
+                    Positioned(
+                      bottom: -5,
+                      left: -10,
+                      child: RotationTransition(
+                        turns: _rotateAnimation,
+                        child: const Text('🌸', style: TextStyle(fontSize: 16)),
+                      ),
                     ),
-                  ),
-                ],
+                    Positioned(
+                      top: 10,
+                      left: -15,
+                      child: ScaleTransition(
+                        scale: _bounceAnimation,
+                        child: const Text('💖', style: TextStyle(fontSize: 14)),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
   Widget _buildCycleOverview(CycleProvider cycleProvider) {
-    return ScaleTransition(
-      scale: _bounceAnimation,
-      child: Container(
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              Colors.pink.withOpacity(0.8),
-              Colors.purple.withOpacity(0.8),
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final ovulationDays = _calculateOvulationDays(cycleProvider);
+    
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isDarkMode
+              ? [
+                  const Color(0xFF4C1D95), // Deep purple
+                  const Color(0xFF6B21A8), // Purple
+                  const Color(0xFF7C3AED), // Bright purple
+                ]
+              : [
+                  const Color(0xFF6366F1), // Indigo
+                  const Color(0xFF8B5CF6), // Violet
+                  const Color(0xFFA855F7), // Purple
+                ],
+        ),
+        borderRadius: BorderRadius.circular(25),
+        boxShadow: [
+          BoxShadow(
+            color: isDarkMode 
+                ? Colors.purple.withOpacity(0.3)
+                : Colors.indigo.withOpacity(0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // Main ovulation info
+          Text(
+            'Ovulation in',
+            style: TextStyle(
+              fontSize: 18,
+              color: Colors.white.withOpacity(0.9),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 8),
+          
+          // Days count
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text(
+                '$ovulationDays',
+                style: const TextStyle(
+                  fontSize: 60,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                  height: 1.0,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Days',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white.withOpacity(0.9),
+                ),
+              ),
             ],
           ),
-          borderRadius: BorderRadius.circular(25),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.pink.withOpacity(0.3),
-              blurRadius: 15,
-              offset: const Offset(0, 8),
+          
+          const SizedBox(height: 8),
+          
+          // Pregnancy chance
+          Text(
+            'Chance to get Pregnant',
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.white.withOpacity(0.8),
+              fontWeight: FontWeight.w400,
             ),
-          ],
-        ),
-        child: Column(
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  _getLocalizations(context).cycleOverview,
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-                RotationTransition(
-                  turns: _rotateAnimation,
-                  child: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(
-                      Icons.sync,
-                      color: Colors.white,
-                      size: 24,
-                    ),
-                  ),
-                ),
-              ],
+          ),
+          
+          const SizedBox(height: 20),
+          
+          // Progress indicator
+          Container(
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(2),
             ),
-            const SizedBox(height: 20),
-            Row(
-              children: [
-                Flexible(
-                  flex: 2,
-                  child: _buildCycleInfo(
-                    'Day',
-                    '${cycleProvider.currentCycleDay}',
-                    'of ${cycleProvider.averageCycleLength}',
-                  ),
+            child: FractionallySizedBox(
+              alignment: Alignment.centerLeft,
+              widthFactor: _getOvulationProgress(cycleProvider),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(2),
                 ),
-                Container(
-                  width: 1,
-                  height: 40,
-                  margin: const EdgeInsets.symmetric(horizontal: 8),
-                  color: Colors.white.withOpacity(0.3),
-                ),
-                Flexible(
-                  flex: 2,
-                  child: _buildCycleInfo(
-                    'Phase',
-                    _getCurrentPhase(cycleProvider),
-                    _getPhaseEmoji(cycleProvider),
-                  ),
-                ),
-                Container(
-                  width: 1,
-                  height: 40,
-                  margin: const EdgeInsets.symmetric(horizontal: 8),
-                  color: Colors.white.withOpacity(0.3),
-                ),
-                Flexible(
-                  flex: 2,
-                  child: _buildCycleInfo(
-                    _getLocalizations(context).nextPeriod,
-                    _getNextPeriodLabel(cycleProvider),
-                    _getNextPeriodEmoji(cycleProvider),
-                  ),
-                ),
-              ],
+              ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildCycleInfo(String label, String value, String subtitle) {
-    return Column(
-      children: [
-        Text(
-          label,
-          style: const TextStyle(fontSize: 14, color: Colors.white),
-          overflow: TextOverflow.ellipsis,
-          maxLines: 1,
+  int _calculateOvulationDays(CycleProvider cycleProvider) {
+    // Ovulation typically occurs around day 14 of a 28-day cycle
+    final cycleLength = cycleProvider.averageCycleLength;
+    final currentDay = cycleProvider.currentCycleDay;
+    final ovulationDay = cycleLength - 14; // Approximately 14 days before next period
+    
+    final daysToOvulation = ovulationDay - currentDay;
+    return daysToOvulation > 0 ? daysToOvulation : 0;
+  }
+
+  double _getOvulationProgress(CycleProvider cycleProvider) {
+    final cycleLength = cycleProvider.averageCycleLength;
+    final currentDay = cycleProvider.currentCycleDay;
+    return (currentDay / cycleLength).clamp(0.0, 1.0);
+  }
+  }
+
+  }
+
+  Widget _buildProductGuideSection() {
+
+  Widget _buildCycleStatsBar(CycleProvider cycleProvider) {
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+    final avgCycleLength = cycleProvider.averageCycleLength;
+    final cycleHistoryCount = cycleProvider.cycles.length;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      decoration: BoxDecoration(
+        color: isDarkMode
+            ? Colors.white.withOpacity(0.1)
+            : Colors.white.withOpacity(0.9),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isDarkMode
+              ? Colors.white.withOpacity(0.2)
+              : Colors.grey.withOpacity(0.3),
         ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
+        boxShadow: isDarkMode
+            ? []
+            : [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _buildStatItem(
+            'Avg. Cycle',
+            '$avgCycleLength days',
+            Icons.sync_rounded,
+            Colors.purple,
+            isDarkMode,
           ),
-          overflow: TextOverflow.ellipsis,
-          maxLines: 1,
-        ),
-        Text(
-          subtitle,
-          style: const TextStyle(fontSize: 12, color: Colors.white70),
-          overflow: TextOverflow.ellipsis,
-          maxLines: 1,
-        ),
-      ],
+          Container(
+            width: 1,
+            height: 40,
+            color: (isDarkMode ? Colors.white : Colors.grey).withOpacity(0.3),
+          ),
+          _buildStatItem(
+            'Cycles Tracked',
+            '$cycleHistoryCount',
+            Icons.history_rounded,
+            Colors.pink,
+            isDarkMode,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatItem(
+    String label,
+    String value,
+    IconData icon,
+    Color color,
+    bool isDarkMode,
+  ) {
+    return Expanded(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: color, size: 20),
+          const SizedBox(height: 6),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: isDarkMode ? Colors.white : const Color(0xFF2D3748),
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              color: (isDarkMode ? Colors.white : const Color(0xFF2D3748))
+                  .withOpacity(0.7),
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildQuickActions() {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final titleColor = isDarkMode ? Colors.white : const Color(0xFF2D3748);
-    final cardColor = isDarkMode
-        ? Colors.white.withOpacity(0.1)
-        : Colors.white.withOpacity(0.9);
-    final textColor = isDarkMode ? Colors.white : const Color(0xFF2D3748);
-
-    // Get localizations with fallback
-    AppLocalizations? localizations;
-    try {
-      localizations = _getLocalizations(context);
-    } catch (e) {
-      localizations = null;
-    }
-
-    final actions = [
-      {
-        'title': localizations?.logPeriod ?? 'Log Period',
-        'icon': Icons.water_drop,
-        'color': Colors.red,
-        'emoji': '🩸',
-        'onTap': () => Navigator.pushNamed(context, '/log-period'),
-      },
-      {
-        'title': localizations?.logMood ?? 'Track Mood',
-        'icon': Icons.mood,
-        'color': Colors.orange,
-        'emoji': '😊',
-        'onTap': () => Navigator.pushNamed(context, '/log-mood'),
-      },
-      {
-        'title': localizations?.logSymptoms ?? 'Symptoms',
-        'icon': Icons.health_and_safety,
-        'color': Colors.green,
-        'emoji': '💊',
-        'onTap': () => Navigator.pushNamed(context, '/log-symptoms'),
-      },
-      {
-        'title': 'Flow',
-        'icon': Icons.trending_up,
-        'color': Colors.blue,
-        'emoji': '📈',
-        'onTap': () => Navigator.pushNamed(context, '/log-flow'),
-      },
-    ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Text(
-              'Quick Actions',
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: titleColor,
-              ),
-            ),
-            const SizedBox(width: 10),
-            const Text('✨', style: TextStyle(fontSize: 20)),
-          ],
+        Text(
+          'My Daily Insights',
+          style: TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+            color: titleColor,
+          ),
         ),
         const SizedBox(height: 20),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 16,
-            mainAxisSpacing: 16,
-            childAspectRatio: 1.15,
-          ),
-          itemCount: actions.length,
-          itemBuilder: (context, index) {
-            final action = actions[index];
-            return Material(
-              elevation: 4,
-              shadowColor: (action['color'] as Color).withOpacity(0.2),
-              borderRadius: BorderRadius.circular(24),
-              child: InkWell(
-                onTap: action['onTap'] as VoidCallback,
-                borderRadius: BorderRadius.circular(24),
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [cardColor, cardColor],
-                    ),
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(
-                      color: (action['color'] as Color).withOpacity(0.2),
-                      width: 2,
-                    ),
-                    boxShadow: isDarkMode
-                        ? [
-                            BoxShadow(
-                              color: (action['color'] as Color).withOpacity(
-                                0.1,
-                              ),
-                              blurRadius: 12,
-                              offset: const Offset(0, 4),
-                            ),
-                          ]
-                        : [
-                            BoxShadow(
-                              color: (action['color'] as Color).withOpacity(
-                                0.15,
-                              ),
-                              blurRadius: 12,
-                              offset: const Offset(0, 6),
-                            ),
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        // Icon container with gradient background
-                        Container(
-                          width: 56,
-                          height: 56,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [
-                                (action['color'] as Color).withOpacity(0.2),
-                                (action['color'] as Color).withOpacity(0.1),
-                              ],
-                            ),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: (action['color'] as Color).withOpacity(
-                                0.3,
-                              ),
-                              width: 1,
-                            ),
-                          ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                action['emoji'] as String,
-                                style: const TextStyle(fontSize: 20),
-                              ),
-                              const SizedBox(height: 2),
-                              Icon(
-                                action['icon'] as IconData,
-                                color: action['color'] as Color,
-                                size: 16,
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        // Title with better styling
-                        Text(
-                          action['title'] as String,
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: textColor,
-                            letterSpacing: 0.2,
-                          ),
-                          textAlign: TextAlign.center,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            );
-          },
+        Row(
+          children: [
+            // First card - smaller with icons and +6
+            Expanded(
+              flex: 1,
+              child: _buildInsightCard1(isDarkMode),
+            ),
+            const SizedBox(width: 12),
+            // Second card - Today's Cycle Day
+            Expanded(
+              flex: 1,
+              child: _buildInsightCard2(isDarkMode),
+            ),
+            const SizedBox(width: 12),
+            // Third card - Pregnancy or PMS
+            Expanded(
+              flex: 1,
+              child: _buildInsightCard3(isDarkMode),
+            ),
+          ],
         ),
       ],
+    );
+  }
+
+  Widget _buildInsightCard1(bool isDarkMode) {
+    return Container(
+      height: 140,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDarkMode 
+            ? const Color(0xFF374151) 
+            : const Color(0xFF6B7280),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: Colors.pink.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.water_drop,
+                  color: Colors.pink,
+                  size: 16,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.mood,
+                  color: Colors.blue,
+                  size: 16,
+                ),
+              ),
+            ],
+          ),
+          const Spacer(),
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: Colors.green.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Icon(
+              Icons.add,
+              color: Colors.green,
+              size: 20,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '+6',
+            style: TextStyle(
+              color: isDarkMode ? Colors.white : Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInsightCard2(bool isDarkMode) {
+    final cycleProvider = Provider.of<CycleProvider>(context, listen: false);
+    
+    return Container(
+      height: 140,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            const Color(0xFF6366F1),
+            const Color(0xFF8B5CF6),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "Today's",
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.8),
+              fontSize: 14,
+            ),
+          ),
+          Text(
+            'Cycle Day',
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.8),
+              fontSize: 14,
+            ),
+          ),
+          const Spacer(),
+          Text(
+            '${cycleProvider.currentCycleDay}',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 48,
+              fontWeight: FontWeight.bold,
+              height: 1.0,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInsightCard3(bool isDarkMode) {
+    return Container(
+      height: 140,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            const Color(0xFFF59E0B),
+            const Color(0xFFEF4444),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Pregnancy or',
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.9),
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          Text(
+            'Just PMS?',
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.9),
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const Spacer(),
+          // Illustration placeholder
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Icon(
+              Icons.pregnant_woman,
+              color: Colors.white.withOpacity(0.8),
+              size: 24,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -1026,6 +1304,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final titleColor = Colors.white;
     final textColor = Colors.white.withOpacity(0.9);
+    final notificationProvider = Provider.of<NotificationProvider>(context);
+    final cycleProvider = Provider.of<CycleProvider>(context);
+
+    // Get personalized reminders based on cycle phase and notifications
+    final reminders = _getPersonalizedReminders(
+      cycleProvider,
+      notificationProvider,
+    );
 
     return TweenAnimationBuilder<double>(
       duration: const Duration(milliseconds: 2200),
@@ -1073,32 +1359,40 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           color: titleColor,
                         ),
                       ),
+                      const Spacer(),
+                      GestureDetector(
+                        onTap: () => Navigator.pushNamed(
+                          context,
+                          '/notification-settings',
+                        ),
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Icon(
+                            Icons.settings,
+                            color: Colors.white,
+                            size: 16,
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 16),
-                  _buildReminderItem(
-                    '💧',
-                    'Stay hydrated - drink 8 glasses of water',
-                    textColor,
-                  ),
-                  const SizedBox(height: 8),
-                  _buildReminderItem(
-                    '🧘‍♀️',
-                    'Take a moment for mindfulness',
-                    textColor,
-                  ),
-                  const SizedBox(height: 8),
-                  _buildReminderItem(
-                    '📝',
-                    'Log your symptoms and mood',
-                    textColor,
-                  ),
-                  const SizedBox(height: 8),
-                  _buildReminderItem(
-                    '🌸',
-                    'You\'re amazing just as you are!',
-                    textColor,
-                  ),
+                  ...reminders
+                      .map(
+                        (reminder) => Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: _buildReminderItem(
+                            reminder['emoji'] as String,
+                            reminder['text'] as String,
+                            textColor,
+                          ),
+                        ),
+                      )
+                      ,
                 ],
               ),
             ),
@@ -1203,5 +1497,82 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     if (daysUntil <= 7) return '📅';
     if (daysUntil <= 14) return '🌸';
     return '🗓️';
+  }
+
+  List<Map<String, String>> _getPersonalizedReminders(
+    CycleProvider cycleProvider,
+    NotificationProvider notificationProvider,
+  ) {
+    final phase = _getCurrentPhase(cycleProvider);
+    final daysUntilPeriod = cycleProvider.daysUntilNextPeriod;
+
+    List<Map<String, String>> reminders = [];
+
+    // Phase-specific reminders
+    switch (phase) {
+      case 'Menstrual':
+        reminders.addAll([
+          {'emoji': '🔥', 'text': 'Use a heating pad for cramps relief'},
+          {'emoji': '🍫', 'text': 'Dark chocolate can help with mood'},
+          {'emoji': '😴', 'text': 'Get extra rest - your body is working hard'},
+        ]);
+        break;
+      case 'Follicular':
+        reminders.addAll([
+          {'emoji': '🥗', 'text': 'Focus on iron-rich foods to rebuild'},
+          {'emoji': '💪', 'text': 'Great time to start new fitness routines'},
+          {'emoji': '🎯', 'text': 'Perfect for planning and goal setting'},
+        ]);
+        break;
+      case 'Ovulation':
+        reminders.addAll([
+          {
+            'emoji': '✨',
+            'text': 'You\'re at peak energy - make the most of it!',
+          },
+          {'emoji': '💼', 'text': 'Ideal time for important meetings'},
+          {'emoji': '🌟', 'text': 'Your confidence is naturally higher'},
+        ]);
+        break;
+      case 'Luteal':
+        reminders.addAll([
+          {'emoji': '🧘‍♀️', 'text': 'Practice relaxation techniques'},
+          {'emoji': '📝', 'text': 'Good time for organizing and planning'},
+          {'emoji': '🌙', 'text': 'Listen to your body\'s signals'},
+        ]);
+        break;
+    }
+
+    // Period prediction reminders
+    if (daysUntilPeriod <= 3 && daysUntilPeriod > 0) {
+      reminders.add({
+        'emoji': '📅',
+        'text': 'Period expected in $daysUntilPeriod days - prepare supplies',
+      });
+    }
+
+    // Notification-based reminders
+    if (notificationProvider.isPeriodReminderEnabled) {
+      reminders.add({
+        'emoji': '📝',
+        'text': 'Log your daily symptoms and mood',
+      });
+    }
+
+    if (notificationProvider.isDailyLogReminderEnabled) {
+      reminders.add({
+        'emoji': '💧',
+        'text': 'Don\'t forget your daily log entry',
+      });
+    }
+
+    // General wellness reminders
+    reminders.addAll([
+      {'emoji': '💧', 'text': 'Stay hydrated - drink 8 glasses of water'},
+      {'emoji': '🌸', 'text': 'You\'re amazing just as you are!'},
+    ]);
+
+    // Limit to 4 most relevant reminders
+    return reminders.take(4).toList();
   }
 }

@@ -95,7 +95,7 @@ class _LogFlowScreenState extends State<LogFlowScreen> {
           children: [
             _buildSectionTitle('How is your flow today?'),
             const SizedBox(height: 16),
-            ..._flowOptions.map((option) => _buildFlowCard(option)).toList(),
+            ..._flowOptions.map((option) => _buildFlowCard(option)),
             const SizedBox(height: 24),
             _buildSectionTitle('Notes (Optional)'),
             const SizedBox(height: 12),
