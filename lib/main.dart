@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:menstrual_tracker/screens/onboarding_screen.dart';
+import 'package:menstrual_tracker/screens/auth/onboarding_screen.dart';
+import 'package:menstrual_tracker/screens/main/notifications_screen.dart';
+import 'package:menstrual_tracker/screens/auth/login_screen.dart';
+import 'package:menstrual_tracker/screens/auth/auth_wrapper.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:menstrual_tracker/screens/main_screen.dart';
-import 'package:menstrual_tracker/screens/log_period_screen.dart';
-import 'package:menstrual_tracker/screens/log_mood_screen.dart';
-import 'package:menstrual_tracker/screens/log_symptoms_screen.dart';
-import 'package:menstrual_tracker/screens/log_flow_screen.dart';
-import 'package:menstrual_tracker/screens/notification_settings_screen.dart';
+import 'package:menstrual_tracker/screens/main/main_screen.dart';
+import 'package:menstrual_tracker/screens/logging/log_period_screen.dart';
+import 'package:menstrual_tracker/screens/logging/log_mood_screen.dart';
+import 'package:menstrual_tracker/screens/logging/log_symptoms_screen.dart';
+import 'package:menstrual_tracker/screens/logging/log_flow_screen.dart';
+import 'package:menstrual_tracker/screens/settings/notification_settings_screen.dart';
+import 'package:menstrual_tracker/screens/settings/notification_debug_screen.dart';
 import 'package:menstrual_tracker/providers/cycle_provider.dart';
 import 'package:menstrual_tracker/providers/theme_provider.dart';
 import 'package:menstrual_tracker/providers/auth_provider.dart';
@@ -16,6 +20,8 @@ import 'package:menstrual_tracker/providers/notification_provider.dart';
 import 'package:menstrual_tracker/providers/education_provider.dart';
 import 'package:menstrual_tracker/providers/language_provider.dart';
 import 'package:menstrual_tracker/providers/navigation_provider.dart';
+import 'package:menstrual_tracker/providers/content_provider.dart';
+import 'package:menstrual_tracker/providers/chatbot_provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'l10n/app_localizations.dart';
@@ -36,6 +42,8 @@ void main() async {
         ChangeNotifierProvider(create: (context) => EducationProvider()),
         ChangeNotifierProvider(create: (context) => LanguageProvider()),
         ChangeNotifierProvider(create: (context) => NavigationProvider()),
+        ChangeNotifierProvider(create: (context) => ContentProvider()),
+        ChangeNotifierProvider(create: (context) => ChatbotProvider()),
       ],
       child: MyApp(hasSeenOnboarding: hasSeenOnboarding),
     ),
@@ -61,10 +69,25 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> _initializeProviders() async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final cycleProvider = Provider.of<CycleProvider>(context, listen: false);
     final notificationProvider = Provider.of<NotificationProvider>(
       context,
       listen: false,
     );
+
+    // Set up callback to update cycle provider when auth state changes
+    authProvider.setAuthStateChangeCallback((String? userId) async {
+      await cycleProvider.updateUserAuthentication(userId);
+    });
+
+    // Wait for auth provider to initialize
+    await Future.delayed(const Duration(milliseconds: 100));
+
+    // Update cycle provider with current user authentication
+    if (authProvider.isAuthenticated) {
+      await cycleProvider.updateUserAuthentication(authProvider.user?.uid);
+    }
 
     // Initialize notification provider which will handle period predictions
     await notificationProvider.initialize();
@@ -95,7 +118,7 @@ class _MyAppState extends State<MyApp> {
           darkTheme: themeProvider.darkTheme,
           themeMode: themeProvider.themeMode,
           home: widget.hasSeenOnboarding
-              ? const MainScreen()
+              ? const AuthWrapper()
               : const OnboardingScreen(),
           routes: {
             '/log-period': (context) => const LogPeriodScreen(),
@@ -104,6 +127,10 @@ class _MyAppState extends State<MyApp> {
             '/log-flow': (context) => const LogFlowScreen(),
             '/notification-settings': (context) =>
                 const NotificationSettingsScreen(),
+            '/notification-debug': (context) => const NotificationDebugScreen(),
+            '/notifications': (context) => const NotificationsScreen(),
+            '/main': (context) => const MainScreen(),
+            '/login': (context) => const LoginScreen(),
           },
           debugShowCheckedModeBanner: false,
         );

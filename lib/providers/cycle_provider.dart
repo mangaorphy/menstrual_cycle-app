@@ -77,30 +77,55 @@ class CycleProvider with ChangeNotifier {
 
   // Update user ID when authentication changes (call this after login/logout)
   Future<void> updateUserAuthentication(String? newUserId) async {
+    print('🔄 CycleProvider: Updating user authentication');
+    print('📝 Old User ID: $_userId');
+    print('📝 New User ID: $newUserId');
+
     final oldUserId = _userId;
 
     if (newUserId != null && newUserId != oldUserId) {
       // User logged in with a different ID
+      print('✅ User logged in with new ID: $newUserId');
       _userId = newUserId;
 
       // Save new user ID to SharedPreferences
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('user_id', _userId!);
+      print('💾 Saved new user ID to SharedPreferences');
 
       // If there were cycles under the old temporary ID, migrate them
       if (oldUserId != null && oldUserId.startsWith('user_')) {
+        print('🔄 Migrating data from temporary user: $oldUserId');
         await _migrateCyclesToAuthenticatedUser(oldUserId, newUserId);
       }
 
-      // Reload cycles for the new user
+      // Reload cycles and daily logs for the authenticated user
+      print('📥 Reloading data for authenticated user...');
       await _loadCyclesFromFirestore();
       await _loadDailyLogsFromFirestore();
+
+      // Reload initial setup status for this user
+      await _loadInitialSetupStatus();
+
+      print('✅ Data reload completed for user: $newUserId');
     } else if (newUserId == null && oldUserId != null) {
       // User logged out, create temporary ID
+      print('🔓 User logged out, creating temporary ID');
       await _loadUserId();
       await _loadCyclesFromFirestore();
       await _loadDailyLogsFromFirestore();
+      await _loadInitialSetupStatus();
+      print('✅ Switched to temporary user: $_userId');
+    } else if (newUserId != null && newUserId == oldUserId) {
+      // Same user, just ensure data is loaded
+      print('🔄 Same user, ensuring data is loaded...');
+      await _loadCyclesFromFirestore();
+      await _loadDailyLogsFromFirestore();
+      await _loadInitialSetupStatus();
+      print('✅ Data refresh completed for existing user');
     }
+
+    notifyListeners();
   }
 
   // Migrate cycles from temporary user to authenticated user
@@ -254,7 +279,15 @@ class CycleProvider with ChangeNotifier {
       // Schedule notifications for the new cycle
       await _scheduleNotificationsForCycle(newCycle);
 
+      // Explicitly refresh all calculated values
+      print('🔄 Refreshing calculated values after adding new cycle...');
       notifyListeners();
+
+      // Force recalculation by triggering another notification after a brief delay
+      Future.delayed(const Duration(milliseconds: 100), () {
+        print('🔄 Final notification after cycle addition');
+        notifyListeners();
+      });
     } catch (e) {
       print('❌ Error adding cycle to Firestore: $e');
       // Still add locally if Firestore fails (at beginning)
@@ -263,7 +296,15 @@ class CycleProvider with ChangeNotifier {
       // Schedule notifications even if Firestore fails
       await _scheduleNotificationsForCycle(newCycle);
 
+      // Explicitly refresh all calculated values
+      print('🔄 Refreshing calculated values after local cycle addition...');
       notifyListeners();
+
+      // Force recalculation by triggering another notification after a brief delay
+      Future.delayed(const Duration(milliseconds: 100), () {
+        print('🔄 Final notification after local cycle addition');
+        notifyListeners();
+      });
     }
   }
 
@@ -271,6 +312,12 @@ class CycleProvider with ChangeNotifier {
   Future<void> refreshData() async {
     await _loadCyclesFromFirestore();
     await _loadDailyLogsFromFirestore();
+  }
+
+  // Force recalculation of all derived values
+  void forceRecalculation() {
+    print('🔄 Forcing recalculation of all cycle values...');
+    notifyListeners();
   }
 
   // Update cycle in Firestore
@@ -375,6 +422,9 @@ class CycleProvider with ChangeNotifier {
 
   void _sortAndNotify() {
     _dailyLogs.sort((a, b) => b.date.compareTo(a.date));
+    print(
+      '🔄 Data sorted and listeners notified - Cycles: ${_cycles.length}, Daily logs: ${_dailyLogs.length}',
+    );
     notifyListeners();
   }
 
@@ -419,8 +469,8 @@ class CycleProvider with ChangeNotifier {
     }
 
     // If no active period, find the most recent cycle for cycle tracking
-    var mostRecentCycle = _cycles.last;
-    for (var cycle in _cycles.reversed) {
+    var mostRecentCycle = _cycles.first;
+    for (var cycle in _cycles) {
       if (!targetDate.isBefore(cycle.periodStartDate)) {
         mostRecentCycle = cycle;
         break;

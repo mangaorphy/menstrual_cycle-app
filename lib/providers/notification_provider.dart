@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../services/notification_service.dart';
 
 class NotificationProvider with ChangeNotifier {
   final NotificationService _notificationService = NotificationService();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
   bool _isPeriodReminderEnabled = true;
   bool _isDailyLogReminderEnabled = true;
@@ -15,6 +19,10 @@ class NotificationProvider with ChangeNotifier {
   ); // 8 PM
   bool _isInitialized = false;
 
+  // Firebase-based notifications
+  List<AppNotification> _notifications = [];
+  final bool _isLoading = false;
+
   // Getters
   bool get isPeriodReminderEnabled => _isPeriodReminderEnabled;
   bool get isDailyLogReminderEnabled => _isDailyLogReminderEnabled;
@@ -22,6 +30,9 @@ class NotificationProvider with ChangeNotifier {
   int get periodReminderDays => _periodReminderDays;
   TimeOfDay get dailyLogReminderTime => _dailyLogReminderTime;
   bool get isInitialized => _isInitialized;
+  List<AppNotification> get notifications => _notifications;
+  bool get isLoading => _isLoading;
+  int get unreadCount => _notifications.where((n) => !n.isRead).length;
 
   /// Initialize notification provider
   Future<void> initialize() async {
@@ -29,8 +40,75 @@ class NotificationProvider with ChangeNotifier {
 
     await _notificationService.initialize();
     await _loadPreferences();
+    _initializeFirebaseNotifications();
     _isInitialized = true;
     print('🔔 NotificationProvider initialized');
+  }
+
+  /// Initialize Firebase-based notifications
+  void _initializeFirebaseNotifications() {
+    _auth.authStateChanges().listen((user) {
+      if (user != null) {
+        _listenToNotifications();
+        _scheduleLoginReminders();
+        _updateLastLogin();
+      } else {
+        _notifications.clear();
+        notifyListeners();
+      }
+    });
+  }
+
+  void _listenToNotifications() {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    _firestore
+        .collection('users')
+        .doc(user.uid)
+        .collection('notifications')
+        .orderBy('timestamp', descending: true)
+        .snapshots()
+        .listen((snapshot) {
+          _notifications = snapshot.docs
+              .map((doc) => AppNotification.fromFirestore(doc))
+              .toList();
+          notifyListeners();
+        });
+  }
+
+  Future<void> _scheduleLoginReminders() async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    // Check if user has been inactive for more than 3 days
+    final userDoc = await _firestore.collection('users').doc(user.uid).get();
+    final lastLogin = userDoc.data()?['lastLogin'] as Timestamp?;
+
+    if (lastLogin != null) {
+      final daysSinceLogin = DateTime.now()
+          .difference(lastLogin.toDate())
+          .inDays;
+
+      if (daysSinceLogin >= 3) {
+        await _createNotification(
+          title: 'Backup Your Data',
+          message:
+              'Don\'t lose your cycle data! Log in to backup your information.',
+          type: NotificationType.loginReminder,
+          actionData: {'route': '/login'},
+        );
+      }
+    }
+  }
+
+  Future<void> _updateLastLogin() async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    await _firestore.collection('users').doc(user.uid).update({
+      'lastLogin': FieldValue.serverTimestamp(),
+    });
   }
 
   /// Load notification preferences from SharedPreferences
@@ -243,6 +321,117 @@ class NotificationProvider with ChangeNotifier {
     final period = time.period == DayPeriod.am ? 'AM' : 'PM';
     return '${hour == 0 ? 12 : hour}:$minute $period';
   }
+
+  // Firebase notification methods
+  Future<void> createWelcomeNotification() async {
+    await _createNotification(
+      title: 'Welcome to Your Cycle Tracker!',
+      message:
+          'Start tracking your periods and symptoms for better health insights.',
+      type: NotificationType.welcome,
+    );
+  }
+
+  Future<void> createPeriodReminder(DateTime expectedDate) async {
+    await _createNotification(
+      title: 'Period Reminder',
+      message: 'Your period is expected around ${_formatDate(expectedDate)}',
+      type: NotificationType.periodReminder,
+      actionData: {'date': expectedDate.toIso8601String()},
+    );
+  }
+
+  Future<void> createSymptomTrackingReminder() async {
+    await _createNotification(
+      title: 'Track Your Symptoms',
+      message: 'Don\'t forget to log your symptoms and mood today!',
+      type: NotificationType.symptomReminder,
+      actionData: {'route': '/home'},
+    );
+  }
+
+  Future<void> _createNotification({
+    required String title,
+    required String message,
+    required NotificationType type,
+    Map<String, dynamic>? actionData,
+  }) async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    final notification = AppNotification(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      title: title,
+      message: message,
+      type: type,
+      timestamp: DateTime.now(),
+      isRead: false,
+      actionData: actionData,
+    );
+
+    await _firestore
+        .collection('users')
+        .doc(user.uid)
+        .collection('notifications')
+        .doc(notification.id)
+        .set(notification.toFirestore());
+
+    // Show local notification
+    await _notificationService.showNotification(
+      id: notification.id.hashCode,
+      title: title,
+      body: message,
+    );
+  }
+
+  Future<void> markAsRead(String notificationId) async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    await _firestore
+        .collection('users')
+        .doc(user.uid)
+        .collection('notifications')
+        .doc(notificationId)
+        .update({'isRead': true});
+  }
+
+  Future<void> markAllAsRead() async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    final batch = _firestore.batch();
+    for (final notification in _notifications.where((n) => !n.isRead)) {
+      final docRef = _firestore
+          .collection('users')
+          .doc(user.uid)
+          .collection('notifications')
+          .doc(notification.id);
+      batch.update(docRef, {'isRead': true});
+    }
+    await batch.commit();
+  }
+
+  Future<void> deleteNotification(String notificationId) async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    await _firestore
+        .collection('users')
+        .doc(user.uid)
+        .collection('notifications')
+        .doc(notificationId)
+        .delete();
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.day}/${date.month}/${date.year}';
+  }
+
+  void handleNotificationTap(AppNotification notification) {
+    markAsRead(notification.id);
+    // Navigation will be handled in the UI layer
+  }
 }
 
 extension TimeOfDayExtension on TimeOfDay {
@@ -251,4 +440,59 @@ extension TimeOfDayExtension on TimeOfDay {
     final minute = this.minute.toString().padLeft(2, '0');
     return '$hour:$minute';
   }
+}
+
+class AppNotification {
+  final String id;
+  final String title;
+  final String message;
+  final NotificationType type;
+  final DateTime timestamp;
+  final bool isRead;
+  final Map<String, dynamic>? actionData;
+
+  AppNotification({
+    required this.id,
+    required this.title,
+    required this.message,
+    required this.type,
+    required this.timestamp,
+    required this.isRead,
+    this.actionData,
+  });
+
+  factory AppNotification.fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    return AppNotification(
+      id: doc.id,
+      title: data['title'] ?? '',
+      message: data['message'] ?? '',
+      type: NotificationType.values.firstWhere(
+        (e) => e.toString() == data['type'],
+        orElse: () => NotificationType.general,
+      ),
+      timestamp: (data['timestamp'] as Timestamp).toDate(),
+      isRead: data['isRead'] ?? false,
+      actionData: data['actionData'],
+    );
+  }
+
+  Map<String, dynamic> toFirestore() {
+    return {
+      'title': title,
+      'message': message,
+      'type': type.toString(),
+      'timestamp': Timestamp.fromDate(timestamp),
+      'isRead': isRead,
+      'actionData': actionData,
+    };
+  }
+}
+
+enum NotificationType {
+  welcome,
+  loginReminder,
+  periodReminder,
+  symptomReminder,
+  general,
 }

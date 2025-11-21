@@ -8,6 +8,9 @@ class AuthProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _errorMessage;
 
+  // Callback to notify other providers of auth changes
+  Function(String?)? _onAuthStateChanged;
+
   User? get user => _user;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
@@ -17,11 +20,22 @@ class AuthProvider extends ChangeNotifier {
     _initializeAuth();
   }
 
+  // Set callback for auth state changes
+  void setAuthStateChangeCallback(Function(String?) callback) {
+    _onAuthStateChanged = callback;
+  }
+
   void _initializeAuth() {
     // Listen to auth state changes
     _auth.authStateChanges().listen((User? user) {
       _user = user;
       _saveUserData();
+
+      // Notify other providers of auth state change
+      if (_onAuthStateChanged != null) {
+        _onAuthStateChanged!(_user?.uid);
+      }
+
       notifyListeners();
     });
   }

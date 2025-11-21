@@ -243,9 +243,9 @@ class NotificationService {
       bodyText,
       scheduledDateTime,
       notificationDetails,
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      matchDateTimeComponents: DateTimeComponents.time,
       payload: 'period_reminder_$notificationId',
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
     );
 
     print('🔔 Period reminder scheduled for: $scheduledDateTime');
@@ -299,9 +299,9 @@ class NotificationService {
       'Your period is expected to start today. Don\'t forget to log it! 💕',
       scheduledDateTime,
       notificationDetails,
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      matchDateTimeComponents: DateTimeComponents.time,
       payload: 'period_start_$notificationId',
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
     );
 
     print('🔔 Next period notification scheduled for: $scheduledDateTime');
@@ -352,9 +352,9 @@ class NotificationService {
       'How are you feeling today? Log your mood and symptoms! ✨',
       scheduledDateTime,
       notificationDetails,
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      matchDateTimeComponents: DateTimeComponents.time,
       payload: 'daily_log_$notificationId',
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
     );
 
     print('🔔 Daily log reminder scheduled for: $scheduledDateTime');
@@ -405,14 +405,15 @@ class NotificationService {
       'Your fertile window is starting. Track any changes! 🌸',
       scheduledDateTime,
       notificationDetails,
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      matchDateTimeComponents: DateTimeComponents.time,
       payload: 'fertile_window_$notificationId',
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
     );
 
     print('🔔 Fertile window notification scheduled for: $scheduledDateTime');
   }
 
+  /// Cancel a specific notification
   Future<void> cancelNotification(int notificationId) async {
     await _notifications.cancel(notificationId);
     print('🔔 Cancelled notification: $notificationId');
@@ -472,5 +473,69 @@ class NotificationService {
     );
 
     print('🔔 Immediate notification shown: $title');
+  }
+
+  Future<void> showNotification({
+    required int id,
+    required String title,
+    required String body,
+    String? payload,
+  }) async {
+    if (!_isInitialized) await initialize();
+
+    final notificationDetails = NotificationDetails(
+      android: AndroidNotificationDetails(
+        _cycleTrackingChannelId,
+        'Cycle Tracking',
+        importance: Importance.high,
+        priority: Priority.high,
+        icon: '@mipmap/ic_launcher',
+      ),
+      iOS: const DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+      ),
+    );
+
+    await _notifications.show(
+      id,
+      title,
+      body,
+      notificationDetails,
+      payload: payload,
+    );
+
+    print('🔔 Notification shown: $title');
+  }
+
+  /// Test notification function - shows immediate notification for testing
+  Future<void> testNotification() async {
+    await showImmediateNotification(
+      title: '🧪 Test Notification',
+      body: 'If you see this, notifications are working! 🎉',
+      payload: 'test_notification',
+      notificationId: 9999,
+    );
+  }
+
+  /// Check notification permissions and system status
+  Future<Map<String, dynamic>> getNotificationStatus() async {
+    if (!_isInitialized) await initialize();
+
+    final isEnabled = await areNotificationsEnabled();
+    final pendingNotifications = await getPendingNotifications();
+
+    return {
+      'is_initialized': _isInitialized,
+      'permissions_granted': isEnabled,
+      'pending_notifications_count': pendingNotifications.length,
+      'pending_notifications': pendingNotifications
+          .map((n) => {'id': n.id, 'title': n.title, 'body': n.body})
+          .toList(),
+      'platform': Platform.isAndroid
+          ? 'Android'
+          : (Platform.isIOS ? 'iOS' : 'Other'),
+    };
   }
 }

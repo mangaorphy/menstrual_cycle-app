@@ -61,11 +61,12 @@ class EducationProgress {
       userId: map['userId'] ?? '',
       lastUpdated:
           (map['lastUpdated'] as Timestamp?)?.toDate() ?? DateTime.now(),
-      quizResults:
-          (map['quizResults'] as Map<String, dynamic>?)?.map(
-            (key, value) => MapEntry(key, QuizResult.fromMap(value)),
-          ) ??
-          {},
+      quizResults: Map<String, QuizResult>.from(
+        (map['quizResults'] as Map<String, dynamic>?)?.map(
+              (key, value) => MapEntry(key, QuizResult.fromMap(value)),
+            ) ??
+            {},
+      ),
       hasViewedTamponGuide: map['hasViewedTamponGuide'] ?? false,
       tamponGuideSteps: List<int>.from(map['tamponGuideSteps'] ?? []),
       viewedVideos: List<String>.from(map['viewedVideos'] ?? []),
